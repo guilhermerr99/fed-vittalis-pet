@@ -1,0 +1,42 @@
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px max(16px, env(safe-area-inset-left, 0px));
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.marca {
+  font-family: var(--font-d);
+  font-size: 18px;
+}
+
+nav {
+  display: flex;
+  gap: 4px;
+
+  a {
+    padding: 8px 14px;
+    border-radius: 10px;
+    color: var(--ink-2);
+    text-decoration: none;
+    font-weight: 600;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--ink);
+      outline: 2px solid var(--line);
+    }
+
+    &.ativo {
+      background: var(--ink);
+      color: #fff;
+    }
+  }
+}
+
+.conteudo {
+  padding: 24px max(16px, env(safe-area-inset-left, 0px));
+}

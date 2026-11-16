@@ -1,0 +1,35 @@
+/* Tokens visuais do protótipo aprovado: base neutra, cor só em status e dados. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --ink: #151a21;
+  --ink-2: #4a525d;
+  --line: #dde1e7;
+  --accent: #2b5fa8;
+  --ok: #1f7a4d;
+  --warn: #8a5a00;
+  --bad: #b3261e;
+  --font-d: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-b: 'Nunito Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-b);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-d);
+  margin: 0;
+}
