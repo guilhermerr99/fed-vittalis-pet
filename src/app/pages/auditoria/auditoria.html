@@ -1,11 +1,11 @@
-<header class="cabecalho">
+<header class="ph">
   <div>
     <h1>Auditoria</h1>
-    <p class="sub">Quem fez o quê e quando. O registro só aceita inclusão.</p>
+    <p>Quem fez o quê e quando. O registro só aceita inclusão: nada é alterado nem apagado.</p>
   </div>
-  <form [formGroup]="filtro" class="campo" (change)="filtrar()">
+  <form [formGroup]="filtro" class="field" (change)="filtrar()" style="min-width: 240px">
     <label for="acao">Ação</label>
-    <select id="acao" formControlName="acao">
+    <select id="acao" class="inp" formControlName="acao">
       <option value="">Todas</option>
       @for (a of acoes; track a[0]) {
         <option [value]="a[0]">{{ a[1] }}</option>
@@ -14,39 +14,48 @@
   </form>
 </header>
 
-@if (erro(); as mensagem) {
-  <p class="alerta" role="alert">{{ mensagem }}</p>
-}
+<div class="stack">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
 
-<div class="tabela-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Quando</th>
-        <th>Ação</th>
-        <th>Autor</th>
-        <th>Origem</th>
-        <th>Detalhes</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (r of dados()?.itens ?? []; track r.id) {
+  <div class="tbl">
+    <table>
+      <thead>
         <tr>
-          <td>{{ r.quando | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
-          <td>{{ rotulo(r.acao) }}</td>
-          <td>{{ r.autorEmail ?? '—' }} @if (r.autorPerfil) { <span class="chip">{{ r.autorPerfil }}</span> }</td>
-          <td>{{ r.ip ?? '—' }}</td>
-          <td>{{ resumo(r) }}</td>
+          <th>Quando</th>
+          <th>Ação</th>
+          <th>Autor</th>
+          <th>Origem</th>
+          <th>Detalhes</th>
         </tr>
-      } @empty {
-        <tr><td colspan="5" class="vazio">{{ carregando() ? 'Carregando…' : 'Nenhum registro.' }}</td></tr>
-      }
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        @for (r of dados()?.itens ?? []; track r.id) {
+          <tr>
+            <td class="num">{{ r.quando | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
+            <td>{{ rotulo(r.acao) }}</td>
+            <td>
+              {{ r.autorEmail ?? '—' }}
+              @if (r.autorPerfil) {
+                <span class="chip">{{ r.autorPerfil }}</span>
+              }
+            </td>
+            <td class="num">{{ origem(r.ip) }}</td>
+            <td class="muted">{{ resumo(r) }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="vazio">{{ carregando() ? 'Carregando…' : 'Nenhum registro.' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 
-<div class="acoes" style="margin-top: 12px; align-items: center">
-  <span class="sub">Página {{ pagina() + 1 }} de {{ totalDePaginas() }} · {{ dados()?.total ?? 0 }} registros</span>
-  <button type="button" (click)="irPara(-1)" [disabled]="pagina() === 0">Anterior</button>
-  <button type="button" (click)="irPara(1)" [disabled]="pagina() + 1 >= totalDePaginas()">Próxima</button>
+  <div class="row" style="justify-content: flex-end">
+    <span class="muted">Página {{ pagina() + 1 }} de {{ totalDePaginas() }} · {{ dados()?.total ?? 0 }} registros</span>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="irPara(-1)" [disabled]="pagina() === 0">Anterior</button>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="irPara(1)" [disabled]="pagina() + 1 >= totalDePaginas()">Próxima</button>
+  </div>
 </div>

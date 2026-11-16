@@ -1,0 +1,88 @@
+<header class="ph">
+  <div>
+    <h1>Planos</h1>
+    <p>Os planos vendidos pela clínica. A cobertura de cada um é definida na tela Cobertura.</p>
+  </div>
+  @if (!editando()) {
+    <button type="button" class="btn btn-primary" (click)="novo()">Novo plano</button>
+  }
+</header>
+
+<div class="stack">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert ok" role="status">{{ mensagem }}</p>
+  }
+
+  @if (editando()) {
+    <form class="card stack" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+      <h2>{{ editando() === 'novo' ? 'Novo plano' : 'Alterar plano' }}</h2>
+      <div class="grade">
+        <div class="field">
+          <label for="nome">Nome</label>
+          <input id="nome" class="inp" formControlName="nome" autocomplete="off" />
+          @if (form.controls.nome.touched && form.controls.nome.invalid) {
+            <small class="erro">Informe o nome do plano.</small>
+          }
+        </div>
+        <div class="field">
+          <label for="mensalidade">Mensalidade (R$)</label>
+          <input id="mensalidade" class="inp" inputmode="decimal" formControlName="mensalidade" placeholder="89,90" autocomplete="off" />
+          <small>Vale para contratos novos. Contratos em vigor mantêm o valor contratado.</small>
+        </div>
+      </div>
+      <div class="field">
+        <label for="descricao">Descrição</label>
+        <input id="descricao" class="inp" formControlName="descricao" autocomplete="off" />
+      </div>
+      <div class="row" style="justify-content: flex-end">
+        <button type="button" class="btn btn-ghost" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Salvar' }}</button>
+      </div>
+    </form>
+  }
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr>
+          <th>Plano</th>
+          <th>Descrição</th>
+          <th class="dir">Mensalidade</th>
+          <th>Situação</th>
+          <th><span class="sr">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of planos(); track p.id) {
+          <tr>
+            <td>
+              <b>{{ p.nome }}</b>
+              <div class="muted">{{ p.codigo }}</div>
+            </td>
+            <td class="muted">{{ p.descricao || '—' }}</td>
+            <td class="num dir">{{ p.mensalidadeCentavos | reais }}</td>
+            <td>
+              @if (p.ativo) {
+                <span class="chip ok">À venda</span>
+              } @else {
+                <span class="chip">Desativado</span>
+              }
+            </td>
+            <td class="dir">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="editar(p)">Editar</button>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="alternar(p)">{{ p.ativo ? 'Desativar' : 'Ativar' }}</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="vazio">{{ carregando() ? 'Carregando…' : 'Nenhum plano cadastrado.' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Plano desativado deixa de ser vendido; os contratos existentes continuam valendo.</p>
+</div>

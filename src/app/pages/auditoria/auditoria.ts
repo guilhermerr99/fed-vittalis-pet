@@ -33,13 +33,55 @@ const ACOES: Record<string, string> = {
   USUARIO_ATIVADO: 'Usuário ativado',
   USUARIO_DESATIVADO: 'Usuário desativado',
   ADMINISTRADOR_INICIAL_CRIADO: 'Administrador inicial criado',
+  PLANO_CRIADO: 'Plano criado',
+  PLANO_ALTERADO: 'Plano alterado',
+  PLANO_SITUACAO_ALTERADA: 'Situação do plano alterada',
+  PROCEDIMENTO_CRIADO: 'Procedimento criado',
+  PROCEDIMENTO_ALTERADO: 'Procedimento alterado',
+  PROCEDIMENTO_SITUACAO_ALTERADA: 'Situação do procedimento alterada',
+  COBERTURA_ALTERADA: 'Cobertura alterada',
+  COBERTURA_REMOVIDA: 'Cobertura removida',
+  COBERTURA_IMPORTADA: 'Cobertura importada por planilha',
+  PARAMETRO_ALTERADO: 'Parâmetro alterado',
 };
+
+const CAMPOS: Record<string, string> = {
+  antes: 'antes',
+  depois: 'depois',
+  plano: 'plano',
+  procedimento: 'procedimento',
+  origem: 'origem',
+  vigenciaInicio: 'a partir de',
+  carenciaDias: 'carência (dias)',
+  limiteAnual: 'limite/ano',
+  coparticipacaoCentavos: 'coparticipação',
+  intervaloMinimoDias: 'intervalo mín. (dias)',
+  mensalidadeCentavos: 'mensalidade',
+  precoParticularCentavos: 'preço particular',
+};
+
+function formatar(valor: unknown, chave = ''): string {
+  if (valor == null) {
+    return 'nenhum';
+  }
+  if (typeof valor === 'object') {
+    if (Array.isArray(valor)) {
+      return valor.map((v) => formatar(v)).join(', ');
+    }
+    return Object.entries(valor as Record<string, unknown>)
+      .map(([k, v]) => `${CAMPOS[k] ?? k}: ${formatar(v, k)}`)
+      .join(' · ');
+  }
+  if (typeof valor === 'number' && chave.endsWith('Centavos')) {
+    return (valor / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+  return String(valor);
+}
 
 @Component({
   selector: 'app-auditoria',
   imports: [ReactiveFormsModule, DatePipe],
   templateUrl: './auditoria.html',
-  styleUrl: '../usuarios/usuarios.scss',
 })
 export class Auditoria implements OnInit {
   private readonly http = inject(HttpClient);
@@ -75,14 +117,12 @@ export class Auditoria implements OnInit {
     this.carregar();
   }
 
+  protected origem(ip?: string): string {
+    return !ip ? '—' : ip === '0:0:0:0:0:0:0:1' || ip === '::1' || ip === '127.0.0.1' ? 'este computador' : ip;
+  }
+
   protected resumo(r: Registro): string {
-    const d = r.detalhes;
-    if (!d) {
-      return '';
-    }
-    return Object.entries(d)
-      .map(([k, v]) => `${k}: ${String(v)}`)
-      .join(' · ');
+    return r.detalhes ? formatar(r.detalhes) : '';
   }
 
   private carregar(): void {

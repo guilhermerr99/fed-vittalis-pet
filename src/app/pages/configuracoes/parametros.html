@@ -1,0 +1,54 @@
+<header class="ph">
+  <div>
+    <h1>Parâmetros</h1>
+    <p>Regras gerais do plano que a clínica pode ajustar sem depender de suporte técnico.</p>
+  </div>
+</header>
+
+<form class="stack" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert ok" role="status">{{ mensagem }}</p>
+  }
+
+  <section class="card stack">
+    <h2>Animais aceitos</h2>
+    <div class="field">
+      <label for="especies">Espécies</label>
+      <input id="especies" class="inp" formControlName="especies" placeholder="Cão, Gato" autocomplete="off" />
+      <small>Separe por vírgula, em minúsculas e sem acento (por exemplo: cao, gato). Só estas espécies podem ser contratadas.</small>
+    </div>
+    <div class="field" style="max-width: 280px">
+      <label for="desconto">Desconto do segundo animal (%)</label>
+      <input id="desconto" class="inp" inputmode="decimal" formControlName="desconto" autocomplete="off" />
+      <small>Aplicado aos animais adicionais do mesmo tutor. Use 0 se não houver.</small>
+    </div>
+  </section>
+
+  <section class="card stack">
+    <h2>Mensalidade em atraso</h2>
+    <div class="grade">
+      <div class="field">
+        <label for="suspensao">Suspender o plano após (dias)</label>
+        <input id="suspensao" class="inp" inputmode="numeric" formControlName="suspensao" autocomplete="off" />
+        <small>Plano suspenso não autoriza novos atendimentos.</small>
+      </div>
+      <div class="field">
+        <label for="cancelamento">Cancelar automaticamente após (dias)</label>
+        <input id="cancelamento" class="inp" inputmode="numeric" formControlName="cancelamento" placeholder="Em branco = nunca" autocomplete="off" />
+        <small>Deve ser maior que o prazo de suspensão.</small>
+      </div>
+      <div class="field">
+        <label for="avisos">Avisar o tutor nos dias</label>
+        <input id="avisos" class="inp" formControlName="avisos" placeholder="0, 3, 7" autocomplete="off" />
+        <small>Dias após o vencimento em que o aviso é enviado.</small>
+      </div>
+    </div>
+  </section>
+
+  <div class="row" style="justify-content: flex-end">
+    <button type="submit" class="btn btn-primary" [disabled]="salvando() || carregando()">{{ salvando() ? 'Salvando…' : 'Salvar parâmetros' }}</button>
+  </div>
+</form>

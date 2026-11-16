@@ -8,7 +8,6 @@ import { mensagemDeErro } from '../login/login';
   selector: 'app-senha',
   imports: [ReactiveFormsModule],
   templateUrl: './senha.html',
-  styleUrl: '../login/login.scss',
 })
 export class Senha {
   private readonly fb = inject(FormBuilder);

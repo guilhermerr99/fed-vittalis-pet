@@ -44,6 +44,33 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/auditoria/auditoria').then((m) => m.Auditoria),
   },
   {
+    path: 'configuracoes',
+    canActivate: [perfilGuard('GESTAO')],
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'planos' },
+      {
+        path: 'planos',
+        title: 'Planos · Vittalis Pet',
+        loadComponent: () => import('./pages/configuracoes/planos').then((m) => m.Planos),
+      },
+      {
+        path: 'procedimentos',
+        title: 'Procedimentos · Vittalis Pet',
+        loadComponent: () => import('./pages/configuracoes/procedimentos').then((m) => m.Procedimentos),
+      },
+      {
+        path: 'cobertura',
+        title: 'Cobertura · Vittalis Pet',
+        loadComponent: () => import('./pages/configuracoes/cobertura').then((m) => m.Cobertura),
+      },
+      {
+        path: 'parametros',
+        title: 'Parâmetros · Vittalis Pet',
+        loadComponent: () => import('./pages/configuracoes/parametros').then((m) => m.Parametros),
+      },
+    ],
+  },
+  {
     path: 'cliente',
     title: 'Cliente · Vittalis Pet',
     loadComponent: () => import('./areas/cliente').then((m) => m.Cliente),

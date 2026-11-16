@@ -1,94 +1,109 @@
-<header class="cabecalho">
+<header class="ph">
   <div>
     <h1>Usuários da equipe</h1>
-    <p class="sub">Cadastre veterinários e gestores. A senha inicial é provisória.</p>
+    <p>Cadastre veterinários e gestores. A senha inicial é provisória e deve ser trocada no primeiro acesso.</p>
   </div>
   @if (!formAberto()) {
-    <button type="button" class="primario" (click)="abrirFormulario()">Novo usuário</button>
+    <button type="button" class="btn btn-primary" (click)="abrirFormulario()">Novo usuário</button>
   }
 </header>
 
-@if (erro(); as mensagem) {
-  <p class="alerta" role="alert">{{ mensagem }}</p>
-}
-@if (aviso(); as mensagem) {
-  <p class="ok" role="status">{{ mensagem }}</p>
-}
+<div class="stack">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert ok" role="status">{{ mensagem }}</p>
+  }
 
-@if (formAberto()) {
-  <form class="novo" [formGroup]="form" (ngSubmit)="criar()" novalidate>
-    <h2>Novo usuário</h2>
-    <div class="grade">
-      <div class="campo">
-        <label for="nome">Nome</label>
-        <input id="nome" formControlName="nome" autocomplete="off" />
-        @if (form.controls.nome.touched && form.controls.nome.invalid) {
-          <small class="erro-campo">Informe o nome.</small>
-        }
-      </div>
-      <div class="campo">
-        <label for="email">E-mail</label>
-        <input id="email" type="email" formControlName="email" autocomplete="off" />
-        @if (form.controls.email.touched && form.controls.email.invalid) {
-          <small class="erro-campo">Informe um e-mail válido.</small>
-        }
-      </div>
-      <div class="campo">
-        <label for="perfil">Perfil</label>
-        <select id="perfil" formControlName="perfil">
-          @for (p of perfisDisponiveis(); track p) {
-            <option [value]="p">{{ nomes[p] }}</option>
+  @if (formAberto()) {
+    <form class="card stack" [formGroup]="form" (ngSubmit)="criar()" novalidate>
+      <h2>Novo usuário</h2>
+      <div class="grade">
+        <div class="field">
+          <label for="nome">Nome</label>
+          <input id="nome" class="inp" formControlName="nome" autocomplete="off" />
+          @if (form.controls.nome.touched && form.controls.nome.invalid) {
+            <small class="erro">Informe o nome.</small>
           }
-        </select>
-      </div>
-      <div class="campo">
-        <label for="senhaInicial">Senha provisória</label>
-        <input id="senhaInicial" type="password" formControlName="senhaInicial" autocomplete="new-password" />
-        <small>Pelo menos 10 caracteres, com letras e números.</small>
-        @if (form.controls.senhaInicial.touched && form.controls.senhaInicial.invalid) {
-          <small class="erro-campo">A senha deve ter pelo menos 10 caracteres.</small>
-        }
-      </div>
-    </div>
-    <div class="acoes">
-      <button type="button" class="secundario" (click)="cancelar()">Cancelar</button>
-      <button type="submit" class="primario" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Cadastrar' }}</button>
-    </div>
-  </form>
-}
-
-<div class="tabela-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Nome</th>
-        <th>E-mail</th>
-        <th>Perfil</th>
-        <th>Situação</th>
-        <th>Último acesso</th>
-        <th><span class="sr">Ações</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (u of usuarios(); track u.id) {
-        <tr>
-          <td>{{ u.nome }} @if (souEu(u)) { <span class="chip">você</span> }</td>
-          <td>{{ u.email }}</td>
-          <td>{{ nomes[u.perfil] }}</td>
-          <td>
-            @if (u.ativo) { <span class="chip ok-chip">Ativo</span> } @else { <span class="chip">Inativo</span> }
-            @if (u.deveTrocarSenha) { <span class="chip">Senha provisória</span> }
-          </td>
-          <td>{{ u.ultimoLoginEm ? (u.ultimoLoginEm | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
-          <td class="direita">
-            @if (!souEu(u)) {
-              <button type="button" class="secundario" (click)="alternar(u)">{{ u.ativo ? 'Desativar' : 'Ativar' }}</button>
+        </div>
+        <div class="field">
+          <label for="email">E-mail</label>
+          <input id="email" class="inp" type="email" formControlName="email" autocomplete="off" />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <small class="erro">Informe um e-mail válido.</small>
+          }
+        </div>
+        <div class="field">
+          <label for="perfil">Perfil</label>
+          <select id="perfil" class="inp" formControlName="perfil">
+            @for (p of perfisDisponiveis(); track p) {
+              <option [value]="p">{{ nomes[p] }}</option>
             }
-          </td>
+          </select>
+        </div>
+        <div class="field">
+          <label for="senhaInicial">Senha provisória</label>
+          <input id="senhaInicial" class="inp" type="password" formControlName="senhaInicial" autocomplete="new-password" />
+          <small>Pelo menos 10 caracteres, com letras e números.</small>
+          @if (form.controls.senhaInicial.touched && form.controls.senhaInicial.invalid) {
+            <small class="erro">A senha deve ter pelo menos 10 caracteres.</small>
+          }
+        </div>
+      </div>
+      <div class="row" style="justify-content: flex-end">
+        <button type="button" class="btn btn-ghost" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Cadastrar' }}</button>
+      </div>
+    </form>
+  }
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Perfil</th>
+          <th>Situação</th>
+          <th>Último acesso</th>
+          <th><span class="sr">Ações</span></th>
         </tr>
-      } @empty {
-        <tr><td colspan="6" class="vazio">{{ carregando() ? 'Carregando…' : 'Nenhum usuário cadastrado.' }}</td></tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        @for (u of usuarios(); track u.id) {
+          <tr>
+            <td>
+              <b>{{ u.nome }}</b>
+              @if (souEu(u)) {
+                <span class="chip">você</span>
+              }
+            </td>
+            <td>{{ u.email }}</td>
+            <td>{{ nomes[u.perfil] }}</td>
+            <td>
+              @if (u.ativo) {
+                <span class="chip ok">Ativo</span>
+              } @else {
+                <span class="chip">Inativo</span>
+              }
+              @if (u.deveTrocarSenha) {
+                <span class="chip warn">Senha provisória</span>
+              }
+            </td>
+            <td class="num">{{ u.ultimoLoginEm ? (u.ultimoLoginEm | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+            <td class="dir">
+              @if (!souEu(u)) {
+                <button type="button" class="btn btn-ghost btn-sm" (click)="alternar(u)">{{ u.ativo ? 'Desativar' : 'Ativar' }}</button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="vazio">{{ carregando() ? 'Carregando…' : 'Nenhum usuário cadastrado.' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 </div>

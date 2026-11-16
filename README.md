@@ -39,6 +39,8 @@ src/app/
   app.routes.ts        rotas com guardas por perfil, carregadas sob demanda
   core/auth/           sessão, interceptador de token (renova no 401) e guardas
   pages/               login, alterar senha, usuários e auditoria
+  pages/configuracoes/ planos, procedimentos, cobertura (com importação) e parâmetros
+  shared/              ícones e formatação de dinheiro (centavos)
   areas/               áreas ainda em construção (veterinário, gestão, cliente)
 src/styles.scss        tokens visuais (base neutra, cor só em status e dados)
 ```

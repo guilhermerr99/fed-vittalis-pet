@@ -10,7 +10,6 @@ import { UsuariosService } from './usuarios.service';
   selector: 'app-usuarios',
   imports: [ReactiveFormsModule, DatePipe],
   templateUrl: './usuarios.html',
-  styleUrl: './usuarios.scss',
 })
 export class Usuarios implements OnInit {
   private readonly api = inject(UsuariosService);

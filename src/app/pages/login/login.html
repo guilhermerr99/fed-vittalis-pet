@@ -1,29 +1,32 @@
 <main class="tela">
-  <form class="cartao" [formGroup]="form" (ngSubmit)="entrar()" novalidate>
-    <h1>Vittalis Pet</h1>
-    <p class="sub">Entre com o e-mail e a senha da clínica.</p>
+  <form class="card cartao" [formGroup]="form" (ngSubmit)="entrar()" novalidate>
+    <img class="logo" src="logo.webp" alt="Vittalis Pet, plano de saúde" />
+    <div>
+      <h1>Entrar</h1>
+      <p class="sub">Use o e-mail e a senha da clínica.</p>
+    </div>
 
-    <div class="campo">
+    <div class="field">
       <label for="email">E-mail</label>
-      <input id="email" type="email" formControlName="email" autocomplete="username" />
+      <input id="email" class="inp" type="email" formControlName="email" autocomplete="username" />
       @if (form.controls.email.touched && form.controls.email.invalid) {
-        <small class="erro-campo">Informe o e-mail.</small>
+        <small class="erro">Informe o e-mail.</small>
       }
     </div>
 
-    <div class="campo">
+    <div class="field">
       <label for="senha">Senha</label>
-      <input id="senha" type="password" formControlName="senha" autocomplete="current-password" />
+      <input id="senha" class="inp" type="password" formControlName="senha" autocomplete="current-password" />
       @if (form.controls.senha.touched && form.controls.senha.invalid) {
-        <small class="erro-campo">Informe a senha.</small>
+        <small class="erro">Informe a senha.</small>
       }
     </div>
 
     @if (erro(); as mensagem) {
-      <p class="alerta" role="alert">{{ mensagem }}</p>
+      <p class="alert" role="alert">{{ mensagem }}</p>
     }
 
-    <button type="submit" class="primario" [disabled]="enviando()">
+    <button type="submit" class="btn btn-primary btn-block" [disabled]="enviando()">
       {{ enviando() ? 'Entrando…' : 'Entrar' }}
     </button>
   </form>

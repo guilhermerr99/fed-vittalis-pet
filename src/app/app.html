@@ -1,21 +1,39 @@
-<header class="topo">
-  <strong class="marca">Vittalis Pet</strong>
-  @if (auth.usuario(); as u) {
-    <nav aria-label="Áreas do sistema">
-      @for (item of menu(); track item.rota) {
-        <a [routerLink]="item.rota" routerLinkActive="ativo">{{ item.rotulo }}</a>
-      }
-    </nav>
-    <div class="conta">
-      <span class="quem">
-        <b>{{ u.nome }}</b>
-        <small>{{ nomes[u.perfil] }}</small>
-      </span>
-      <a routerLink="/senha" class="link">Alterar senha</a>
-      <button type="button" class="sair" (click)="sair()">Sair</button>
-    </div>
-  }
-</header>
-<main class="conteudo">
-  <router-outlet />
-</main>
+@if (auth.usuario(); as u) {
+  <div class="app">
+    <header class="topo">
+      <a class="marca" routerLink="/" aria-label="Vittalis Pet">
+        <img src="logo.webp" alt="Vittalis Pet, plano de saúde" />
+      </a>
+      <div class="conta">
+        <span class="quem">
+          <b>{{ u.nome }}</b>
+          <small>{{ nomes[u.perfil] }}</small>
+        </span>
+        <a routerLink="/senha" class="btn btn-ghost btn-sm"><app-icone nome="chave" [tamanho]="16" />Alterar senha</a>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="sair()"><app-icone nome="sair" [tamanho]="16" />Sair</button>
+      </div>
+    </header>
+
+    <aside class="lateral">
+      <nav aria-label="Áreas do sistema">
+        @for (item of principais(); track item.rota) {
+          <a [routerLink]="item.rota" routerLinkActive="ativo"><app-icone [nome]="item.icone" />{{ item.rotulo }}</a>
+        }
+        @if (configuracoes().length) {
+          <p class="grupo">Configurações</p>
+          @for (item of configuracoes(); track item.rota) {
+            <a [routerLink]="item.rota" routerLinkActive="ativo"><app-icone [nome]="item.icone" />{{ item.rotulo }}</a>
+          }
+        }
+      </nav>
+      <div class="rodape">
+        <span class="avatar" aria-hidden="true">{{ iniciais(u.nome) }}</span>
+        <span class="quem"><b>{{ u.nome }}</b><small>{{ nomes[u.perfil] }}</small></span>
+      </div>
+    </aside>
+
+    <main class="conteudo"><router-outlet /></main>
+  </div>
+} @else {
+  <main class="solo"><router-outlet /></main>
+}

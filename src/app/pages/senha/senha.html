@@ -1,34 +1,36 @@
 <main class="tela">
-  <form class="cartao" [formGroup]="form" (ngSubmit)="trocar()" novalidate>
-    <h1>Alterar senha</h1>
-    @if (auth.usuario()?.deveTrocarSenha) {
-      <p class="sub">Sua senha é provisória. Defina uma nova para continuar.</p>
-    } @else {
-      <p class="sub">Depois de alterar, você entra novamente com a nova senha.</p>
-    }
-
-    <div class="campo">
-      <label for="senhaAtual">Senha atual</label>
-      <input id="senhaAtual" type="password" formControlName="senhaAtual" autocomplete="current-password" />
-      @if (form.controls.senhaAtual.touched && form.controls.senhaAtual.invalid) {
-        <small class="erro-campo">Informe a senha atual.</small>
+  <form class="card cartao" [formGroup]="form" (ngSubmit)="trocar()" novalidate>
+    <div>
+      <h1>Alterar senha</h1>
+      @if (auth.usuario()?.deveTrocarSenha) {
+        <p class="sub">Sua senha é provisória. Defina uma nova para continuar.</p>
+      } @else {
+        <p class="sub">Depois de alterar, você entra novamente com a nova senha.</p>
       }
     </div>
 
-    <div class="campo">
+    <div class="field">
+      <label for="senhaAtual">Senha atual</label>
+      <input id="senhaAtual" class="inp" type="password" formControlName="senhaAtual" autocomplete="current-password" />
+      @if (form.controls.senhaAtual.touched && form.controls.senhaAtual.invalid) {
+        <small class="erro">Informe a senha atual.</small>
+      }
+    </div>
+
+    <div class="field">
       <label for="novaSenha">Nova senha</label>
-      <input id="novaSenha" type="password" formControlName="novaSenha" autocomplete="new-password" />
+      <input id="novaSenha" class="inp" type="password" formControlName="novaSenha" autocomplete="new-password" />
       <small>Pelo menos 10 caracteres, com letras e números.</small>
       @if (form.controls.novaSenha.touched && form.controls.novaSenha.invalid) {
-        <small class="erro-campo">A nova senha deve ter pelo menos 10 caracteres.</small>
+        <small class="erro">A nova senha deve ter pelo menos 10 caracteres.</small>
       }
     </div>
 
     @if (erro(); as mensagem) {
-      <p class="alerta" role="alert">{{ mensagem }}</p>
+      <p class="alert" role="alert">{{ mensagem }}</p>
     }
 
-    <button type="submit" class="primario" [disabled]="enviando()">
+    <button type="submit" class="btn btn-primary btn-block" [disabled]="enviando()">
       {{ enviando() ? 'Salvando…' : 'Alterar senha' }}
     </button>
   </form>

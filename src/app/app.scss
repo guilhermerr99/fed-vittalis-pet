@@ -1,77 +1,208 @@
+/* Estrutura do protótipo: barra superior com a logo, menu lateral de 232 px e conteúdo. */
+.app {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+
 .topo {
+  grid-column: 1 / -1;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding: 12px max(16px, env(safe-area-inset-left, 0px));
   background: var(--surface);
   border-bottom: 1px solid var(--line);
+  min-height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .marca {
-  font-family: var(--font-d);
-  font-size: 18px;
-}
-
-nav {
+  width: 232px;
   display: flex;
-  gap: 4px;
-  flex: 1;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--line);
+  padding: 4px 0;
 
-  a {
-    padding: 8px 14px;
-    border-radius: 10px;
-    color: var(--ink-2);
-    text-decoration: none;
-    font-weight: 600;
-
-    &:hover,
-    &:focus-visible {
-      color: var(--ink);
-      outline: 2px solid var(--line);
-    }
-
-    &.ativo {
-      background: var(--ink);
-      color: #fff;
-    }
+  img {
+    height: 52px;
+    width: auto;
+    max-width: 90%;
+    object-fit: contain;
   }
 }
 
 .conta {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  padding: 0 20px;
 }
 
-.quem {
+.conta .quem {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
+  text-align: right;
+  margin-right: 6px;
 
   small {
-    color: var(--ink-2);
+    color: var(--ink-3);
   }
 }
 
-.link {
-  color: var(--accent);
-  font-weight: 600;
-  text-decoration: none;
+.lateral {
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 20px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 46px;
+      padding: 0 12px;
+      border-radius: 12px;
+      color: var(--ink-2);
+      font-weight: 700;
+      text-decoration: none;
+      transition:
+        background 0.18s,
+        color 0.18s;
+
+      &:hover {
+        background: var(--surface-2);
+        color: var(--ink);
+      }
+
+      &.ativo {
+        background: var(--brand-soft);
+        color: var(--ink);
+        box-shadow: inset 3px 0 0 var(--brand);
+      }
+    }
+  }
+
+  .grupo {
+    margin: 14px 12px 4px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
 }
 
-.sair {
-  font: inherit;
-  font-weight: 700;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  cursor: pointer;
+.rodape {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px 0;
+  border-top: 1px solid var(--line);
+
+  .quem {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+
+    b {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--font-d);
+    }
+
+    small {
+      color: var(--ink-3);
+    }
+  }
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  font-family: var(--font-d);
+  font-weight: 800;
+  flex: none;
 }
 
 .conteudo {
-  padding: 24px max(16px, env(safe-area-inset-left, 0px));
+  padding: 28px 32px 48px;
+  min-width: 0;
+}
+
+.solo {
+  min-height: 100vh;
+}
+
+@media (max-width: 920px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .marca {
+    width: auto;
+    padding: 4px 16px;
+    border-right: 0;
+  }
+
+  .conta .quem {
+    display: none;
+  }
+
+  .lateral {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 10px;
+
+    nav {
+      flex-direction: row;
+      overflow-x: auto;
+
+      a {
+        white-space: nowrap;
+      }
+    }
+
+    .grupo,
+    .rodape {
+      display: none;
+    }
+  }
+
+  .conteudo {
+    padding: 20px 16px 40px;
+  }
+}
+
+@media (max-height: 820px) {
+  .conteudo {
+    padding-top: 20px;
+  }
+
+  .lateral nav a {
+    min-height: 42px;
+  }
 }

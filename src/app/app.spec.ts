@@ -29,11 +29,11 @@ describe('App', () => {
 
   const links = (el: HTMLElement) => Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent?.trim());
 
-  it('sem login mostra só a marca, sem menu', () => {
+  it('sem login não mostra menu nem dados de usuário', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('.marca')?.textContent).toContain('Vittalis Pet');
+    expect(el.querySelector('.topo')).toBeNull();
     expect(el.querySelector('nav')).toBeNull();
   });
 
@@ -41,8 +41,8 @@ describe('App', () => {
     expect(links(entrarComo('VETERINARIO'))).toEqual(['Atendimento']);
   });
 
-  it('gestão vê painel, usuários e auditoria', () => {
-    expect(links(entrarComo('GESTAO'))).toEqual(['Painel', 'Usuários', 'Auditoria']);
+  it('gestão vê painel, configurações, usuários e auditoria', () => {
+    expect(links(entrarComo('GESTAO'))).toEqual(['Painel', 'Usuários', 'Auditoria', 'Planos', 'Procedimentos', 'Cobertura', 'Parâmetros']);
   });
 
   it('suporte técnico vê só os usuários', () => {
@@ -53,6 +53,6 @@ describe('App', () => {
     const el = entrarComo('GESTAO');
     expect(el.querySelector('.quem')?.textContent).toContain('Pessoa de Teste');
     expect(el.querySelector('.quem')?.textContent).toContain('Gestão');
-    expect(el.querySelector('.sair')).not.toBeNull();
+    expect(Array.from(el.querySelectorAll('button')).some((b) => b.textContent?.includes('Sair'))).toBe(true);
   });
 });

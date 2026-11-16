@@ -1,35 +1,425 @@
-/* Tokens visuais do protótipo aprovado: base neutra, cor só em status e dados. */
+/*
+ * Sistema visual do Vittalis Pet, herdado do protótipo aprovado: base neutra e limpa, cor só onde há
+ * significado (status, alertas, dados). Títulos e rótulos em Figtree, corpo em Nunito Sans.
+ */
 :root {
   --bg: #f6f7f8;
+  --bg-2: #eef0f2;
   --surface: #ffffff;
-  --ink: #151a21;
-  --ink-2: #4a525d;
-  --line: #dde1e7;
-  --accent: #2b5fa8;
-  --ok: #1f7a4d;
+  --surface-2: #f3f4f6;
+  --ink: #111827;
+  --ink-2: #4b5563;
+  --ink-3: #5f6b7a;
+  --line: #e3e6ea;
+  --brand: #1f2937;
+  --brand-soft: #eceef1;
+  --on-brand: #ffffff;
+  --ok: #1e7a46;
+  --ok-soft: #e4f3ea;
   --warn: #8a5a00;
-  --bad: #b3261e;
-  --font-d: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-b: 'Nunito Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --warn-soft: #fbefd2;
+  --bad: #b42318;
+  --bad-soft: #fde8e6;
+  --info: #2b5fa8;
+  --info-soft: #e6eef9;
+  --font-d: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --font-b: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html,
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-b);
-  font-size: 16px;
-  line-height: 1.5;
+  font: 15px/1.5 var(--font-b);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
 }
 
 h1,
 h2,
-h3 {
+h3,
+h4 {
   font-family: var(--font-d);
+  font-weight: 700;
   margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  color: var(--ink);
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--info);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+/* ---------- Cabeçalho de página ---------- */
+.ph {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: clamp(24px, 3vw, 30px);
+    font-weight: 800;
+  }
+
+  p {
+    color: var(--ink-2);
+    margin-top: 6px;
+    max-width: 66ch;
+  }
+}
+
+/* ---------- Cartão ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+
+  h2 {
+    font-size: 19px;
+  }
+
+  .sub {
+    color: var(--ink-2);
+    margin-top: 4px;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.between {
+  justify-content: space-between;
+}
+
+/* ---------- Botões ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 13px;
+  font-weight: 800;
+  font-family: var(--font-d);
+  text-align: center;
+  white-space: nowrap;
+  transition:
+    transform 0.15s,
+    background 0.15s;
+
+  &:hover:not([disabled]) {
+    transform: translateY(-1px);
+  }
+
+  &:active:not([disabled]) {
+    transform: scale(0.98);
+  }
+
+  &[disabled] {
+    opacity: 0.45;
+    cursor: default;
+  }
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.btn-ghost {
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.btn-danger {
+  background: var(--bad-soft);
+  color: var(--bad);
+  border: 1px solid color-mix(in srgb, var(--bad) 30%, transparent);
+}
+
+.btn-sm {
+  min-height: 36px;
+  padding: 0 13px;
+  font-size: 14px;
+  border-radius: 10px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ---------- Chips ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.chip.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.chip.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.chip.bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.chip.info {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+/* ---------- Campos ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  label {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink-2);
+  }
+
+  small {
+    color: var(--ink-3);
+    font-size: 13px;
+  }
+
+  .erro {
+    color: var(--bad);
+    font-weight: 700;
+  }
+}
+
+.inp {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent);
+  }
+
+  &.sm {
+    min-height: 38px;
+    padding: 0 10px;
+    border-radius: 10px;
+  }
+}
+
+textarea.inp {
+  padding: 12px 14px;
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+/* ---------- Avisos ---------- */
+.alert {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  background: var(--bad-soft);
+  color: var(--bad);
+
+  &.ok {
+    background: var(--ok-soft);
+    color: var(--ok);
+  }
+
+  &.info {
+    background: var(--info-soft);
+    color: var(--info);
+  }
+}
+
+/* ---------- Tabelas ---------- */
+.tbl {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px;
+  }
+
+  th,
+  td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+
+  th {
+    font-family: var(--font-d);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-3);
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .dir {
+    text-align: right;
+  }
+
+  .vazio {
+    text-align: center;
+    color: var(--ink-2);
+    padding: 28px;
+  }
+}
+
+/* ---------- Abas (pílulas) ---------- */
+.abas {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  flex-wrap: wrap;
+
+  button {
+    min-height: 38px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    font-weight: 800;
+    font-family: var(--font-d);
+    color: var(--ink-2);
+
+    &[aria-pressed='true'] {
+      background: var(--brand);
+      color: var(--on-brand);
+    }
+  }
+}
+
+/* Telas baixas (notebook de 1366x768): mais compacto, sem rolagem desnecessária */
+@media (max-height: 820px) {
+  .card {
+    padding: 20px;
+  }
+
+  .ph {
+    margin-bottom: 18px;
+  }
+}
+
+/* O servidor guarda categorias em minúsculas; na tela a primeira letra vai em maiúscula. */
+.cap {
+  display: inline-block;
+}
+.cap::first-letter {
+  text-transform: uppercase;
+}
+
+.tbl td.dir {
+  white-space: nowrap;
 }
