@@ -1,46 +1,58 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { RouterTestingHarness } from '@angular/router/testing';
 import { App } from './app';
-import { routes } from './app.routes';
+import { Perfil } from './core/auth/auth.models';
+import { AuthService } from './core/auth/auth.service';
+import { sessaoDeTeste } from './core/auth/testes';
 
 describe('App', () => {
+  let ctrl: HttpTestingController;
+
   beforeEach(async () => {
+    sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter(routes)],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
+    ctrl = TestBed.inject(HttpTestingController);
   });
 
-  it('should create the app', () => {
+  function entrarComo(perfil: Perfil) {
+    TestBed.inject(AuthService).entrar('a@b.com', 's').subscribe();
+    ctrl.expectOne('/api/auth/login').flush(sessaoDeTeste(perfil));
     const fixture = TestBed.createComponent(App);
-    expect(fixture.componentInstance).toBeTruthy();
-  });
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
 
-  it('mostra a marca e os links das três áreas', async () => {
+  const links = (el: HTMLElement) => Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent?.trim());
+
+  it('sem login mostra só a marca, sem menu', () => {
     const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
+    fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.marca')?.textContent).toContain('Vittalis Pet');
-    const links = Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Veterinário', 'Gestão', 'Cliente']);
+    expect(el.querySelector('nav')).toBeNull();
   });
 
-  it('abre a área do veterinário por padrão', async () => {
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/');
-    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain('Atendimento');
+  it('veterinário vê só o atendimento', () => {
+    expect(links(entrarComo('VETERINARIO'))).toEqual(['Atendimento']);
   });
 
-  it('abre a área da gestão', async () => {
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/gestao');
-    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain('Painel da clínica');
+  it('gestão vê painel, usuários e auditoria', () => {
+    expect(links(entrarComo('GESTAO'))).toEqual(['Painel', 'Usuários', 'Auditoria']);
   });
 
-  it('abre o portal do cliente', async () => {
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/cliente');
-    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain('Seu plano');
+  it('suporte técnico vê só os usuários', () => {
+    expect(links(entrarComo('ADMIN_TECNICO'))).toEqual(['Usuários']);
+  });
+
+  it('mostra o nome e o perfil de quem está logado, e o botão de sair', () => {
+    const el = entrarComo('GESTAO');
+    expect(el.querySelector('.quem')?.textContent).toContain('Pessoa de Teste');
+    expect(el.querySelector('.quem')?.textContent).toContain('Gestão');
+    expect(el.querySelector('.sair')).not.toBeNull();
   });
 });

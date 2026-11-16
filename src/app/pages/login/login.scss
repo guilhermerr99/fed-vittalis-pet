@@ -1,0 +1,79 @@
+.tela {
+  min-height: calc(100vh - 120px);
+  display: grid;
+  place-items: center;
+}
+
+.cartao {
+  width: min(100%, 380px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+h1 {
+  font-size: 26px;
+}
+
+.sub {
+  margin: -8px 0 0;
+  color: var(--ink-2);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  input {
+    font: inherit;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--ink);
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+  }
+}
+
+.erro-campo {
+  color: var(--bad);
+}
+
+.alerta {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fdecea;
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.primario {
+  font: inherit;
+  font-weight: 700;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}

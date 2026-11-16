@@ -1,22 +1,52 @@
 import { Routes } from '@angular/router';
+import { autenticadoGuard, perfilGuard, visitanteGuard } from './core/auth/guards';
 
-/** Três áreas de uso: veterinário (atendimento), gestão e cliente (portal do tutor). */
+/**
+ * Áreas por perfil: veterinário (atendimento), gestão (painel, usuários e auditoria) e cliente (portal do
+ * tutor, com acesso próprio, ainda sem login nesta versão).
+ */
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'veterinario' },
+  { path: '', pathMatch: 'full', redirectTo: 'entrar' },
+  {
+    path: 'entrar',
+    title: 'Entrar · Vittalis Pet',
+    canActivate: [visitanteGuard],
+    loadComponent: () => import('./pages/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'senha',
+    title: 'Alterar senha · Vittalis Pet',
+    canActivate: [autenticadoGuard],
+    loadComponent: () => import('./pages/senha/senha').then((m) => m.Senha),
+  },
   {
     path: 'veterinario',
     title: 'Veterinário · Vittalis Pet',
+    canActivate: [perfilGuard('VETERINARIO')],
     loadComponent: () => import('./areas/veterinario').then((m) => m.Veterinario),
   },
   {
     path: 'gestao',
     title: 'Gestão · Vittalis Pet',
+    canActivate: [perfilGuard('GESTAO')],
     loadComponent: () => import('./areas/gestao').then((m) => m.Gestao),
+  },
+  {
+    path: 'usuarios',
+    title: 'Usuários · Vittalis Pet',
+    canActivate: [perfilGuard('GESTAO', 'ADMIN_TECNICO')],
+    loadComponent: () => import('./pages/usuarios/usuarios').then((m) => m.Usuarios),
+  },
+  {
+    path: 'auditoria',
+    title: 'Auditoria · Vittalis Pet',
+    canActivate: [perfilGuard('GESTAO')],
+    loadComponent: () => import('./pages/auditoria/auditoria').then((m) => m.Auditoria),
   },
   {
     path: 'cliente',
     title: 'Cliente · Vittalis Pet',
     loadComponent: () => import('./areas/cliente').then((m) => m.Cliente),
   },
-  { path: '**', redirectTo: 'veterinario' },
+  { path: '**', redirectTo: 'entrar' },
 ];

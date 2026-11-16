@@ -1,10 +1,20 @@
 <header class="topo">
   <strong class="marca">Vittalis Pet</strong>
-  <nav aria-label="Áreas do sistema">
-    <a routerLink="/veterinario" routerLinkActive="ativo">Veterinário</a>
-    <a routerLink="/gestao" routerLinkActive="ativo">Gestão</a>
-    <a routerLink="/cliente" routerLinkActive="ativo">Cliente</a>
-  </nav>
+  @if (auth.usuario(); as u) {
+    <nav aria-label="Áreas do sistema">
+      @for (item of menu(); track item.rota) {
+        <a [routerLink]="item.rota" routerLinkActive="ativo">{{ item.rotulo }}</a>
+      }
+    </nav>
+    <div class="conta">
+      <span class="quem">
+        <b>{{ u.nome }}</b>
+        <small>{{ nomes[u.perfil] }}</small>
+      </span>
+      <a routerLink="/senha" class="link">Alterar senha</a>
+      <button type="button" class="sair" (click)="sair()">Sair</button>
+    </div>
+  }
 </header>
 <main class="conteudo">
   <router-outlet />

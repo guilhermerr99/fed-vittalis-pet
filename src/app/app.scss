@@ -3,6 +3,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
   padding: 12px max(16px, env(safe-area-inset-left, 0px));
   background: var(--surface);
   border-bottom: 1px solid var(--line);
@@ -16,6 +17,7 @@
 nav {
   display: flex;
   gap: 4px;
+  flex: 1;
 
   a {
     padding: 8px 14px;
@@ -35,6 +37,39 @@ nav {
       color: #fff;
     }
   }
+}
+
+.conta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.quem {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+
+  small {
+    color: var(--ink-2);
+  }
+}
+
+.link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sair {
+  font: inherit;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
 }
 
 .conteudo {

@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": "90d75a71-0c63-44e5-a6d6-265d89a53e0d"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -67,7 +68,10 @@
               "buildTarget": "fed-vittalis-pet:build:development"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "development",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          }
         },
         "test": {
           "builder": "@angular/build:unit-test"
