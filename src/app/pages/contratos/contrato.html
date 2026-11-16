@@ -1,0 +1,152 @@
+<header class="ph">
+  <div>
+    <h1>
+      {{ detalhe()?.contrato?.numero ?? 'Contrato' }}
+      @if (detalhe()?.contrato; as c) {
+        <span [class]="'chip ' + classe(c.situacao)" style="vertical-align: middle; margin-left: 8px">{{ c.situacaoRotulo }}</span>
+      }
+    </h1>
+    <p>Dados do contrato, animais cobertos e o histórico de cada mudança de situação.</p>
+  </div>
+  <a routerLink="/contratos" class="btn btn-ghost">Voltar à lista</a>
+</header>
+
+<div class="stack">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert ok" role="status">{{ mensagem }}</p>
+  }
+
+  @if (detalhe(); as d) {
+    @let c = d.contrato;
+
+    <section class="card stack" aria-label="Dados do contrato">
+      <h2>Contrato</h2>
+      <dl class="dados">
+        <div>
+          <dt>Tutor</dt>
+          <dd>
+            @if (c.tutor; as t) {
+              <a [routerLink]="['/tutores', t.id]">{{ t.nome }}</a>
+              <div class="muted num">{{ t.cpfMascarado }} · {{ telefone(t.telefone) }}</div>
+            } @else {
+              —
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Plano</dt>
+          <dd>{{ c.planoNome }}<div class="muted num">{{ c.planoMensalidadeCentavos | reais }} por animal</div></dd>
+        </div>
+        <div><dt>Contratado em</dt><dd class="num">{{ c.dataContratacao | date: 'dd/MM/yyyy' }}</dd></div>
+        <div><dt>Desconto do segundo animal</dt><dd class="num">{{ c.descontoPercentual }}%</dd></div>
+        @if (c.expiraEm) {
+          <div><dt>Link de assinatura vale até</dt><dd class="num">{{ c.expiraEm | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+        }
+        @if (c.ativadoEm) {
+          <div><dt>Ativo desde</dt><dd class="num">{{ c.ativadoEm | date: 'dd/MM/yyyy' }}</dd></div>
+          <div><dt>Vigência até</dt><dd class="num">{{ c.vigenciaFim | date: 'dd/MM/yyyy' }}</dd></div>
+        }
+      </dl>
+    </section>
+
+    <section class="stack" aria-label="Animais e valores">
+      <h2>Animais e valores</h2>
+      <div class="tbl">
+        <table>
+          <thead>
+            <tr>
+              <th>Animal</th>
+              <th>Espécie</th>
+              <th>A carência começa em</th>
+              <th class="dir">Mensalidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of c.animais; track a.id; let i = $index) {
+              <tr>
+                <td><b>{{ a.nome }}</b><span class="muted"> · {{ i + 1 }}º animal</span></td>
+                <td>{{ a.especie ? especie(a.especie) : '—' }}{{ a.raca ? ' · ' + a.raca : '' }}</td>
+                <td class="num">{{ a.inicioCarencia ? (a.inicioCarencia | date: 'dd/MM/yyyy') : 'Quando o contrato ficar ativo' }}</td>
+                <td class="num dir">{{ a.mensalidadeCentavos | reais }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3"><b>Total por mês</b></td>
+              <td class="num dir"><b>{{ c.mensalidadeTotalCentavos | reais }}</b></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    @if (d.transicoes.length) {
+      <section class="card stack" aria-label="Ações do contrato">
+        <h2>Próximos passos</h2>
+        @if (acao(); as t) {
+          <div class="stack">
+            <p class="muted">{{ ajuda(t.situacao, c.situacao) }}</p>
+            <div class="field">
+              <label for="motivo">Motivo</label>
+              <textarea id="motivo" class="inp" style="min-height: 90px" [formControl]="motivo" maxlength="240"></textarea>
+              @if (motivo.touched && !motivo.value.trim()) {
+                <small class="erro">Informe o motivo.</small>
+              }
+            </div>
+            <div class="row" style="justify-content: flex-end">
+              <button type="button" class="btn btn-ghost" (click)="desistir()">Voltar</button>
+              <button type="button" [class]="t.situacao === 'CANCELADO' ? 'btn btn-danger' : 'btn btn-primary'" [disabled]="salvando()" (click)="confirmar()">
+                {{ salvando() ? 'Salvando…' : rotuloDaAcao(t.situacao, c.situacao) }}
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="row">
+            @for (t of d.transicoes; track t.situacao) {
+              <button
+                type="button"
+                [class]="t.situacao === 'CANCELADO' ? 'btn btn-danger' : 'btn btn-primary'"
+                [disabled]="salvando()"
+                (click)="escolher(t)"
+              >
+                {{ rotuloDaAcao(t.situacao, c.situacao) }}
+              </button>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <section class="stack" aria-label="Histórico">
+      <h2>Histórico</h2>
+      <div class="tbl">
+        <table>
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Mudança</th>
+              <th>Por</th>
+              <th>Motivo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (h of d.historico; track h.quando + h.para) {
+              <tr>
+                <td class="num">{{ h.quando | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ h.de ? h.de + ' → ' : '' }}<b>{{ h.para }}</b></td>
+                <td>{{ h.por ?? '—' }}</td>
+                <td class="muted">{{ h.motivo || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  } @else {
+    <p class="muted">{{ carregando() ? 'Carregando…' : '' }}</p>
+  }
+</div>

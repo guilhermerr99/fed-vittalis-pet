@@ -40,6 +40,8 @@ src/app/
   core/auth/           sessão, interceptador de token (renova no 401) e guardas
   pages/               login, alterar senha, usuários e auditoria
   pages/configuracoes/ planos, procedimentos, cobertura (com importação) e parâmetros
+  pages/tutores/       tutores e animais (formulários reutilizados na contratação)
+  pages/contratos/     nova contratação em passos, lista e detalhe do contrato
   shared/              ícones e formatação de dinheiro (centavos)
   areas/               áreas ainda em construção (veterinário, gestão, cliente)
 src/styles.scss        tokens visuais (base neutra, cor só em status e dados)

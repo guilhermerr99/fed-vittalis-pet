@@ -1,0 +1,74 @@
+<header class="ph">
+  <div>
+    <h1>Contratos</h1>
+    <p>Acompanhe cada contrato do plano: da assinatura ao pagamento, atrasos e cancelamentos.</p>
+  </div>
+  <a routerLink="/nova-contratacao" class="btn btn-primary"><app-icone nome="mais" [tamanho]="16" />Nova contratação</a>
+</header>
+
+<div class="stack">
+  <div class="row" style="align-items: flex-end">
+    <div class="field" style="min-width: 320px; flex: 1; max-width: 520px">
+      <label for="busca">Buscar</label>
+      <input id="busca" class="inp" type="search" [formControl]="busca" placeholder="Número do contrato, nome do tutor, animal ou CPF" autocomplete="off" />
+    </div>
+    <div class="field" style="min-width: 220px">
+      <label for="situacao">Situação</label>
+      <select id="situacao" class="inp" [formControl]="situacao">
+        <option value="">Todas</option>
+        @for (s of situacoes; track s.valor) {
+          <option [value]="s.valor">{{ s.rotulo }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr>
+          <th>Contrato</th>
+          <th>Tutor</th>
+          <th>Animais</th>
+          <th>Plano</th>
+          <th class="dir">Mensalidade</th>
+          <th>Situação</th>
+          <th><span class="sr">Abrir</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of dados()?.itens ?? []; track c.id) {
+          <tr>
+            <td class="num"><b>{{ c.numero }}</b></td>
+            <td>{{ c.tutor?.nome ?? '—' }}</td>
+            <td>
+              @for (a of c.animais; track a.id) {
+                <span class="chip">{{ a.nome }}{{ a.especie ? ' · ' + especie(a.especie) : '' }}</span>
+              }
+            </td>
+            <td>{{ c.planoNome }}</td>
+            <td class="num dir">{{ c.mensalidadeTotalCentavos | reais }}</td>
+            <td><span [class]="'chip ' + classe(c.situacao)">{{ c.situacaoRotulo }}</span></td>
+            <td class="dir"><a [routerLink]="['/contratos', c.id]" class="btn btn-ghost btn-sm">Abrir</a></td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="vazio">
+              {{ carregando() ? 'Carregando…' : busca.value || situacao.value ? 'Nenhum contrato encontrado para esse filtro.' : 'Nenhum contrato ainda. Use Nova contratação.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="row" style="justify-content: flex-end">
+    <span class="muted">Página {{ pagina() + 1 }} de {{ totalDePaginas() }} · {{ dados()?.total ?? 0 }} contratos</span>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="irPara(-1)" [disabled]="pagina() === 0">Anterior</button>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="irPara(1)" [disabled]="pagina() + 1 >= totalDePaginas()">Próxima</button>
+  </div>
+</div>

@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { SITUACOES } from '../contratos/contratos.service';
 import { mensagemDeErro } from '../login/login';
 
 interface Registro {
@@ -43,6 +44,13 @@ const ACOES: Record<string, string> = {
   COBERTURA_REMOVIDA: 'Cobertura removida',
   COBERTURA_IMPORTADA: 'Cobertura importada por planilha',
   PARAMETRO_ALTERADO: 'Parâmetro alterado',
+  TUTOR_CRIADO: 'Tutor cadastrado',
+  TUTOR_ALTERADO: 'Tutor alterado',
+  ANIMAL_CADASTRADO: 'Animal cadastrado',
+  ANIMAL_ALTERADO: 'Animal alterado',
+  ANIMAL_SITUACAO_ALTERADA: 'Situação do animal alterada',
+  CONTRATO_CRIADO: 'Contrato criado',
+  CONTRATO_SITUACAO_ALTERADA: 'Situação do contrato alterada',
 };
 
 const CAMPOS: Record<string, string> = {
@@ -58,6 +66,11 @@ const CAMPOS: Record<string, string> = {
   intervaloMinimoDias: 'intervalo mín. (dias)',
   mensalidadeCentavos: 'mensalidade',
   precoParticularCentavos: 'preço particular',
+  numero: 'contrato',
+  de: 'de',
+  para: 'para',
+  animais: 'animais',
+  mensalidadeTotalCentavos: 'mensalidade total',
 };
 
 function formatar(valor: unknown, chave = ''): string {
@@ -71,6 +84,9 @@ function formatar(valor: unknown, chave = ''): string {
     return Object.entries(valor as Record<string, unknown>)
       .map(([k, v]) => `${CAMPOS[k] ?? k}: ${formatar(v, k)}`)
       .join(' · ');
+  }
+  if ((chave === 'de' || chave === 'para') && typeof valor === 'string') {
+    return SITUACOES.find((s) => s.valor === valor)?.rotulo ?? valor;
   }
   if (typeof valor === 'number' && chave.endsWith('Centavos')) {
     return (valor / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

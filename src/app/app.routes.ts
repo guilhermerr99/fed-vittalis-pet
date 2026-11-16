@@ -44,6 +44,49 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/auditoria/auditoria').then((m) => m.Auditoria),
   },
   {
+    path: 'tutores',
+    canActivate: [perfilGuard('VETERINARIO', 'GESTAO')],
+    children: [
+      {
+        path: '',
+        title: 'Tutores · Vittalis Pet',
+        loadComponent: () => import('./pages/tutores/tutores').then((m) => m.Tutores),
+      },
+      {
+        path: 'novo',
+        title: 'Novo tutor · Vittalis Pet',
+        loadComponent: () => import('./pages/tutores/tutor-novo').then((m) => m.TutorNovo),
+      },
+      {
+        path: ':id',
+        title: 'Tutor · Vittalis Pet',
+        loadComponent: () => import('./pages/tutores/tutor').then((m) => m.Tutor),
+      },
+    ],
+  },
+  {
+    path: 'nova-contratacao',
+    title: 'Nova contratação · Vittalis Pet',
+    canActivate: [perfilGuard('VETERINARIO', 'GESTAO')],
+    loadComponent: () => import('./pages/contratos/contrato-novo').then((m) => m.ContratoNovo),
+  },
+  {
+    path: 'contratos',
+    canActivate: [perfilGuard('VETERINARIO', 'GESTAO')],
+    children: [
+      {
+        path: '',
+        title: 'Contratos · Vittalis Pet',
+        loadComponent: () => import('./pages/contratos/contratos').then((m) => m.Contratos),
+      },
+      {
+        path: ':id',
+        title: 'Contrato · Vittalis Pet',
+        loadComponent: () => import('./pages/contratos/contrato').then((m) => m.Contrato),
+      },
+    ],
+  },
+  {
     path: 'configuracoes',
     canActivate: [perfilGuard('GESTAO')],
     children: [
