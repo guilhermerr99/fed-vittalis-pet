@@ -1,0 +1,14 @@
+<header class="ph">
+  <div>
+    <h1>Novo tutor</h1>
+    <p>Depois de salvar, cadastre os animais dele. Para vender um plano, use Nova contratação: ela cadastra tutor e animal no mesmo caminho.</p>
+  </div>
+  <a routerLink="/tutores" class="btn btn-ghost">Voltar</a>
+</header>
+
+<div class="card stack" style="max-width: 760px">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  <app-tutor-form [salvando]="salvando()" (enviar)="salvar($event)" (cancelar)="cancelar()" />
+</div>

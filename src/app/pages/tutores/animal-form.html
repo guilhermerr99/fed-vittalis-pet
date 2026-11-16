@@ -1,0 +1,54 @@
+<form class="stack" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+  <h3>{{ animal() ? 'Alterar animal' : 'Novo animal' }}</h3>
+  <div class="grade">
+    <div class="field">
+      <label for="an">Nome</label>
+      <input id="an" class="inp" formControlName="nome" autocomplete="off" />
+      @if (form.controls.nome.touched && form.controls.nome.invalid) {
+        <small class="erro">Informe o nome do animal.</small>
+      }
+    </div>
+    <div class="field">
+      <label for="ae">Espécie</label>
+      <select id="ae" class="inp" formControlName="especie">
+        <option value="">Selecione</option>
+        @for (e of especies(); track e) {
+          <option [value]="e">{{ rotuloEspecie(e) }}</option>
+        }
+      </select>
+      @if (form.controls.especie.touched && form.controls.especie.invalid) {
+        <small class="erro">Escolha a espécie.</small>
+      }
+    </div>
+    <div class="field">
+      <label for="ar">Raça</label>
+      <input id="ar" class="inp" formControlName="raca" placeholder="Sem raça definida" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="as">Sexo</label>
+      <select id="as" class="inp" formControlName="sexo">
+        <option value="">Não informado</option>
+        <option value="M">Macho</option>
+        <option value="F">Fêmea</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="ad">Nascimento (aproximado, se não souber)</label>
+      <input id="ad" class="inp" type="date" formControlName="nascimento" [max]="hoje" />
+      @if (form.controls.nascimento.touched && form.controls.nascimento.invalid) {
+        <small class="erro">Informe a data de nascimento.</small>
+      }
+    </div>
+    <div class="field">
+      <label for="am">Microchip (opcional)</label>
+      <input id="am" class="inp" inputmode="numeric" formControlName="microchip" placeholder="15 dígitos" autocomplete="off" />
+      @if (form.controls.microchip.invalid) {
+        <small class="erro">O microchip tem 15 dígitos.</small>
+      }
+    </div>
+  </div>
+  <div class="row" style="justify-content: flex-end">
+    <button type="button" class="btn btn-ghost" (click)="cancelar.emit()">Cancelar</button>
+    <button type="submit" class="btn btn-primary" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Salvar' }}</button>
+  </div>
+</form>

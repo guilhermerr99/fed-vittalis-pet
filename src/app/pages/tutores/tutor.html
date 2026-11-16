@@ -1,0 +1,141 @@
+<header class="ph">
+  <div>
+    <h1>{{ tutor()?.nome ?? 'Tutor' }}</h1>
+    <p>Dados do tutor e animais cadastrados.</p>
+  </div>
+  <div class="row">
+    @if (tutor()?.animais?.length) {
+      <a routerLink="/nova-contratacao" [queryParams]="{ tutor: tutor()?.id }" class="btn btn-primary">Contratar plano</a>
+    }
+    <a routerLink="/tutores" class="btn btn-ghost">Voltar à lista</a>
+  </div>
+</header>
+
+<div class="stack">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert ok" role="status">{{ mensagem }}</p>
+  }
+
+  @if (tutor(); as t) {
+    <section class="card stack" aria-label="Dados do tutor">
+      <div class="row between">
+        <h2>Tutor</h2>
+        @if (!editandoTutor()) {
+          <button type="button" class="btn btn-ghost btn-sm" (click)="editarTutor()">Editar</button>
+        }
+      </div>
+
+      @if (editandoTutor()) {
+        <form class="stack" [formGroup]="formTutor" (ngSubmit)="salvarTutor()" novalidate>
+          <div class="grade">
+            <div class="field">
+              <label for="tn">Nome completo</label>
+              <input id="tn" class="inp" formControlName="nome" autocomplete="off" />
+              @if (formTutor.controls.nome.touched && formTutor.controls.nome.invalid) {
+                <small class="erro">Informe o nome e o sobrenome.</small>
+              }
+            </div>
+            <div class="field">
+              <label for="tt">Telefone (WhatsApp)</label>
+              <input id="tt" class="inp" inputmode="tel" formControlName="telefone" autocomplete="off" (input)="mascararTelefone($event)" />
+              @if (formTutor.controls.telefone.touched && formTutor.controls.telefone.invalid) {
+                <small class="erro">Informe o DDD e o número do celular.</small>
+              }
+            </div>
+            <div class="field">
+              <label for="te">E-mail</label>
+              <input id="te" class="inp" type="email" formControlName="email" autocomplete="off" />
+              @if (formTutor.controls.email.touched && formTutor.controls.email.invalid) {
+                <small class="erro">E-mail inválido.</small>
+              }
+            </div>
+          </div>
+          <p class="muted">O CPF não pode ser alterado. Se foi digitado errado, fale com a gestão.</p>
+          <div class="row" style="justify-content: flex-end">
+            <button type="button" class="btn btn-ghost" (click)="editandoTutor.set(false)">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="salvando()">Salvar</button>
+          </div>
+        </form>
+      } @else {
+        <dl class="dados">
+          <div><dt>CPF</dt><dd class="num">{{ t.cpfFormatado }}</dd></div>
+          <div><dt>Telefone</dt><dd class="num">{{ formatarTelefone(t.telefone) }}</dd></div>
+          <div><dt>E-mail</dt><dd>{{ t.email || '—' }}</dd></div>
+          <div><dt>Ciência do aviso de privacidade</dt><dd class="num">{{ t.lgpdConsentidoEm | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+        </dl>
+      }
+    </section>
+
+    <section class="stack" aria-label="Animais">
+      <div class="row between">
+        <h2>Animais</h2>
+        @if (!editandoAnimal()) {
+          <button type="button" class="btn btn-primary btn-sm" (click)="novoAnimal()">Novo animal</button>
+        }
+      </div>
+
+      @if (editandoAnimal()) {
+        <div class="card">
+          <app-animal-form
+            [especies]="especies()"
+            [animal]="animalEmEdicao()"
+            [salvando]="salvando()"
+            (enviar)="salvarAnimal($event)"
+            (cancelar)="cancelarAnimal()"
+          />
+        </div>
+      }
+
+      <div class="tbl">
+        <table>
+          <thead>
+            <tr>
+              <th>Animal</th>
+              <th>Espécie e raça</th>
+              <th>Nascimento</th>
+              <th>Microchip</th>
+              <th>Situação</th>
+              <th><span class="sr">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of t.animais; track a.id) {
+              <tr>
+                <td>
+                  <b>{{ a.nome }}</b>
+                  <div class="muted">{{ a.sexo === 'M' ? 'Macho' : a.sexo === 'F' ? 'Fêmea' : '' }}</div>
+                </td>
+                <td>{{ rotuloEspecie(a.especie) }}{{ a.raca ? ' · ' + a.raca : '' }}</td>
+                <td>
+                  <span class="num">{{ a.nascimento | date: 'dd/MM/yyyy' }}</span>
+                  <div class="muted">{{ idade(a) }}</div>
+                </td>
+                <td class="num">{{ a.microchip || '—' }}</td>
+                <td>
+                  @if (a.ativo) {
+                    <span class="chip ok">Ativo</span>
+                  } @else {
+                    <span class="chip">Inativo</span>
+                  }
+                </td>
+                <td class="dir">
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="editarAnimal(a)">Editar</button>
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="alternarAnimal(a)">{{ a.ativo ? 'Desativar' : 'Ativar' }}</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="vazio">Nenhum animal cadastrado para este tutor.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  } @else {
+    <p class="muted">{{ carregando() ? 'Carregando…' : '' }}</p>
+  }
+</div>

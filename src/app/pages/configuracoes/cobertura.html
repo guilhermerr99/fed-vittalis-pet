@@ -18,7 +18,7 @@
 
   @if (importando()) {
     <section class="card stack" aria-label="Importar planilha">
-      <div class="between">
+      <div class="row between">
         <h2>Importar planilha de cobertura</h2>
         <button type="button" class="btn btn-ghost btn-sm" (click)="fecharImportacao()">Fechar</button>
       </div>
@@ -201,7 +201,7 @@
 
   @if (historico(); as h) {
     <section class="card stack" aria-label="Histórico de versões">
-      <div class="between">
+      <div class="row between">
         <h2>Histórico · {{ h.nome }}</h2>
         <button type="button" class="btn btn-ghost btn-sm" (click)="fecharHistorico()">Fechar</button>
       </div>
