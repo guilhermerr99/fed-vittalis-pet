@@ -38,11 +38,11 @@ describe('App', () => {
   });
 
   it('veterinário vê só o atendimento', () => {
-    expect(links(entrarComo('VETERINARIO'))).toEqual(['Atendimento', 'Nova contratação', 'Contratos', 'Tutores e animais']);
+    expect(links(entrarComo('VETERINARIO'))).toEqual(['Atendimento', 'Nova contratação', 'Contratos', 'Tutores e animais', 'Exceções']);
   });
 
   it('gestão vê painel, configurações, usuários e auditoria', () => {
-    expect(links(entrarComo('GESTAO'))).toEqual(['Nova contratação', 'Contratos', 'Tutores e animais', 'Painel', 'Usuários', 'Auditoria', 'Planos', 'Procedimentos', 'Cobertura', 'Parâmetros']);
+    expect(links(entrarComo('GESTAO'))).toEqual(['Atendimento', 'Nova contratação', 'Contratos', 'Tutores e animais', 'Exceções', 'Painel', 'Usuários', 'Auditoria', 'Planos', 'Procedimentos', 'Cobertura', 'Parâmetros']);
   });
 
   it('suporte técnico vê só os usuários', () => {

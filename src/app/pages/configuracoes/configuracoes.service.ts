@@ -51,6 +51,15 @@ export interface Parametros {
   descontoSegundoAnimalPercentual: number;
 }
 
+export interface ResultadoDasRotinas {
+  linksExpirados: number;
+  suspensos: number;
+  cancelados: number;
+  renovados: number;
+  excecoesExpiradas: number;
+  falhas: number;
+}
+
 export interface RegraResumo {
   carenciaDias: number;
   limiteAnual: number;
@@ -144,5 +153,10 @@ export class ConfiguracoesService {
   }
   salvarParametros(p: Parametros): Observable<Parametros> {
     return this.http.put<Parametros>('/api/parametros', p);
+  }
+
+  // rotinas automáticas
+  executarRotinas(): Observable<ResultadoDasRotinas> {
+    return this.http.post<ResultadoDasRotinas>('/api/rotinas/executar', {});
   }
 }

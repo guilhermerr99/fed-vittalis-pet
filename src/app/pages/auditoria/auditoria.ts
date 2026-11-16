@@ -51,6 +51,17 @@ const ACOES: Record<string, string> = {
   ANIMAL_SITUACAO_ALTERADA: 'Situação do animal alterada',
   CONTRATO_CRIADO: 'Contrato criado',
   CONTRATO_SITUACAO_ALTERADA: 'Situação do contrato alterada',
+  CONTRATO_RENOVADO: 'Contrato renovado',
+  ATENDIMENTO_AUTORIZADO: 'Atendimento autorizado',
+  ATENDIMENTO_NEGADO: 'Atendimento negado',
+  ATENDIMENTO_CONCLUIDO: 'Atendimento concluído',
+  ATENDIMENTO_CANCELADO: 'Atendimento cancelado',
+  COPARTICIPACAO_QUITADA: 'Coparticipação quitada',
+  EXCECAO_SOLICITADA: 'Exceção de carência solicitada',
+  EXCECAO_APROVADA: 'Exceção de carência aprovada',
+  EXCECAO_RECUSADA: 'Exceção de carência recusada',
+  EXCECAO_EXPIRADA: 'Exceção de carência expirada',
+  ROTINAS_EXECUTADAS: 'Rotinas automáticas executadas',
 };
 
 const CAMPOS: Record<string, string> = {
@@ -71,6 +82,19 @@ const CAMPOS: Record<string, string> = {
   para: 'para',
   animais: 'animais',
   mensalidadeTotalCentavos: 'mensalidade total',
+  contrato: 'contrato',
+  estado: 'estado',
+  motivo: 'motivo',
+  usosNoPeriodo: 'usos no período',
+  coparticipacaoPendente: 'coparticipação pendente',
+  data: 'dia',
+  linksExpirados: 'links expirados',
+  suspensos: 'suspensos',
+  cancelados: 'cancelados',
+  renovados: 'renovados',
+  excecoesExpiradas: 'exceções expiradas',
+  falhas: 'falhas',
+  vigenciaFim: 'vigência até',
 };
 
 function formatar(valor: unknown, chave = ''): string {

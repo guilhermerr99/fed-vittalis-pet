@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { mensagemDeErro } from '../login/login';
-import { ConfiguracoesService, Parametros as ParametrosDoSistema } from './configuracoes.service';
+import { ConfiguracoesService, Parametros as ParametrosDoSistema, ResultadoDasRotinas } from './configuracoes.service';
 
 /** "0, 3, 7" → [0, 3, 7]; null se algum item não for inteiro não negativo. */
 export function lerDias(texto: string): number[] | null {
@@ -43,6 +43,26 @@ export class Parametros implements OnInit {
       },
       error: (e: unknown) => {
         this.carregando.set(false);
+        this.erro.set(mensagemDeErro(e));
+      },
+    });
+  }
+
+  protected readonly executando = signal(false);
+  protected readonly rotinas = signal<ResultadoDasRotinas | null>(null);
+
+  /** Roda agora o que as rotinas fariam de madrugada, para a gestão não precisar esperar. */
+  protected executarRotinas(): void {
+    this.erro.set(null);
+    this.aviso.set(null);
+    this.executando.set(true);
+    this.api.executarRotinas().subscribe({
+      next: (r) => {
+        this.executando.set(false);
+        this.rotinas.set(r);
+      },
+      error: (e: unknown) => {
+        this.executando.set(false);
         this.erro.set(mensagemDeErro(e));
       },
     });

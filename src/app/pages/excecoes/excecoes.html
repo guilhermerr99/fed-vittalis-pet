@@ -1,0 +1,101 @@
+<header class="ph">
+  <div>
+    <h1>Exceções de carência</h1>
+    <p>O veterinário solicita com justificativa e a gestão decide. A exceção vale para um animal, um procedimento e um dia, e só supera a carência.</p>
+  </div>
+  <div class="field" style="min-width: 240px">
+    <label for="situacao">Situação</label>
+    <select id="situacao" class="inp" [formControl]="situacao">
+      <option value="">Todas</option>
+      @for (s of situacoes; track s.valor) {
+        <option [value]="s.valor">{{ s.rotulo }}</option>
+      }
+    </select>
+  </div>
+</header>
+
+<div class="stack">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert ok" role="status">{{ mensagem }}</p>
+  }
+
+  @if (analisando(); as e) {
+    <section class="card stack" aria-label="Decisão">
+      <h2>{{ e.procedimentoNome }} · {{ e.animalNome }}</h2>
+      <dl class="dados">
+        <div><dt>Para o dia</dt><dd class="num">{{ e.data | date: 'dd/MM/yyyy' }}</dd></div>
+        <div><dt>Solicitada por</dt><dd>{{ e.solicitadaPor }}<div class="muted num">{{ e.solicitadaEm | date: 'dd/MM/yyyy HH:mm' }}</div></dd></div>
+      </dl>
+      <div>
+        <div class="muted" style="font-size: 12px">Justificativa</div>
+        <p>{{ e.justificativa }}</p>
+      </div>
+      <div class="field">
+        <label for="motivo">Motivo da decisão</label>
+        <textarea id="motivo" class="inp" style="min-height: 80px" [formControl]="motivo" maxlength="240"></textarea>
+        @if (invalido()) {
+          <small class="erro">Informe o motivo, seja para aprovar ou para recusar.</small>
+        }
+      </div>
+      <div class="row" style="justify-content: flex-end">
+        <button type="button" class="btn btn-ghost" (click)="analisando.set(null)">Voltar</button>
+        <button type="button" class="btn btn-danger" [disabled]="salvando()" (click)="decidir(false)">Recusar</button>
+        <button type="button" class="btn btn-primary" [disabled]="salvando()" (click)="decidir(true)">Aprovar</button>
+      </div>
+    </section>
+  }
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr>
+          <th>Animal</th>
+          <th>Procedimento</th>
+          <th>Dia</th>
+          <th>Solicitada por</th>
+          <th>Situação</th>
+          <th><span class="sr">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of dados()?.itens ?? []; track e.id) {
+          <tr>
+            <td><a [routerLink]="['/veterinario']" [queryParams]="{ animal: e.animalId }"><b>{{ e.animalNome }}</b></a></td>
+            <td>
+              {{ e.procedimentoNome }}
+              <div class="muted">{{ e.justificativa }}</div>
+            </td>
+            <td class="num">{{ e.data | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ e.solicitadaPor }}<div class="muted num">{{ e.solicitadaEm | date: 'dd/MM/yyyy HH:mm' }}</div></td>
+            <td>
+              <span [class]="'chip ' + classe(e.situacao)">{{ e.situacaoRotulo }}</span>
+              @if (e.decididaPor) {
+                <div class="muted">{{ e.decididaPor }}: {{ e.motivoDaDecisao }}</div>
+              }
+            </td>
+            <td class="dir">
+              @if (ehGestao() && e.situacao === 'SOLICITADA') {
+                <button type="button" class="btn btn-primary btn-sm" (click)="analisar(e)">Analisar</button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="vazio">
+              {{ carregando() ? 'Carregando…' : situacao.value ? 'Nenhuma exceção com essa situação.' : 'Nenhuma exceção solicitada ainda.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="row" style="justify-content: flex-end">
+    <span class="muted">Página {{ pagina() + 1 }} de {{ totalDePaginas() }} · {{ dados()?.total ?? 0 }} exceções</span>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="irPara(-1)" [disabled]="pagina() === 0">Anterior</button>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="irPara(1)" [disabled]="pagina() + 1 >= totalDePaginas()">Próxima</button>
+  </div>
+</div>

@@ -122,6 +122,9 @@
                   }
                 </td>
                 <td class="dir">
+                  @if (a.ativo) {
+                    <a routerLink="/veterinario" [queryParams]="{ animal: a.id }" class="btn btn-ghost btn-sm">Atender</a>
+                  }
                   <button type="button" class="btn btn-ghost btn-sm" (click)="editarAnimal(a)">Editar</button>
                   <button type="button" class="btn btn-ghost btn-sm" (click)="alternarAnimal(a)">{{ a.ativo ? 'Desativar' : 'Ativar' }}</button>
                 </td>

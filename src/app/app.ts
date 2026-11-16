@@ -14,10 +14,11 @@ interface ItemDeMenu {
 }
 
 const MENU: ItemDeMenu[] = [
-  { rotulo: 'Atendimento', rota: '/veterinario', icone: 'coracao', perfis: ['VETERINARIO'] },
+  { rotulo: 'Atendimento', rota: '/veterinario', icone: 'coracao', perfis: ['VETERINARIO', 'GESTAO'] },
   { rotulo: 'Nova contratação', rota: '/nova-contratacao', icone: 'mais', perfis: ['VETERINARIO', 'GESTAO'] },
   { rotulo: 'Contratos', rota: '/contratos', icone: 'contrato', perfis: ['VETERINARIO', 'GESTAO'] },
   { rotulo: 'Tutores e animais', rota: '/tutores', icone: 'pata', perfis: ['VETERINARIO', 'GESTAO'] },
+  { rotulo: 'Exceções', rota: '/excecoes', icone: 'relogio', perfis: ['VETERINARIO', 'GESTAO'] },
   { rotulo: 'Painel', rota: '/gestao', icone: 'grafico', perfis: ['GESTAO'] },
   { rotulo: 'Planos', rota: '/configuracoes/planos', icone: 'etiqueta', perfis: ['GESTAO'] },
   { rotulo: 'Procedimentos', rota: '/configuracoes/procedimentos', icone: 'prancheta', perfis: ['GESTAO'] },

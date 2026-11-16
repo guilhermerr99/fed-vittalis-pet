@@ -1,0 +1,301 @@
+<header class="ph">
+  <div>
+    <h1>Atendimento</h1>
+    <p>Busque o animal que chegou. O sistema mostra o que o plano libera hoje, procedimento por procedimento.</p>
+  </div>
+  @if (ficha()) {
+    <button type="button" class="btn btn-ghost" (click)="trocar()">Atender outro animal</button>
+  }
+</header>
+
+<div class="stack">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert ok" role="status">{{ mensagem }}</p>
+  }
+
+  @if (!ficha()) {
+    <section class="card stack" aria-label="Buscar animal">
+      <div class="field" style="max-width: 560px">
+        <label for="busca">Animal ou tutor</label>
+        <input id="busca" class="inp" type="search" [formControl]="busca" placeholder="Nome do animal, do tutor, CPF, telefone ou microchip" autocomplete="off" />
+      </div>
+
+      @if (resultados(); as lista) {
+        @if (lista.length) {
+          <ul class="lista-escolha">
+            @for (t of lista; track t.id) {
+              @for (a of t.animais; track a.id) {
+                <li>
+                  <div>
+                    <b>{{ a.nome }}</b>
+                    <span class="muted"> · {{ rotuloEspecie(a.especie) }}{{ a.raca ? ' · ' + a.raca : '' }}</span>
+                    <div class="muted">Tutor: {{ t.nome }} · {{ telefone(t.telefone) }}</div>
+                  </div>
+                  @if (a.ativo) {
+                    <button type="button" class="btn btn-primary btn-sm" (click)="escolher(a.id)">Atender</button>
+                  } @else {
+                    <span class="chip">Inativo</span>
+                  }
+                </li>
+              }
+            }
+          </ul>
+        } @else {
+          <p class="muted">Nada encontrado. Confira o nome ou cadastre o tutor em Nova contratação.</p>
+        }
+      } @else if (buscando()) {
+        <p class="muted">Buscando…</p>
+      } @else if (carregando()) {
+        <p class="muted">Carregando…</p>
+      } @else {
+        <p class="muted">Digite pelo menos duas letras.</p>
+      }
+    </section>
+  } @else {
+    @let f = ficha()!;
+
+    <section class="card stack" aria-label="Animal e contrato">
+      <div class="row between">
+        <div>
+          <h2>{{ f.animal.nome }}</h2>
+          <div class="muted">
+            {{ rotuloEspecie(f.animal.especie) }}{{ f.animal.raca ? ' · ' + f.animal.raca : '' }} · {{ idade(f.animal.nascimento) }}
+          </div>
+          <div class="muted">Tutor: <a [routerLink]="['/tutores', f.tutor.id]">{{ f.tutor.nome }}</a> · {{ telefone(f.tutor.telefone) }}</div>
+        </div>
+        @if (f.contrato; as c) {
+          <div style="text-align: right">
+            <a [routerLink]="['/contratos', c.id]"><b class="num">{{ c.numero }}</b></a>
+            <span [class]="'chip ' + classeContrato(c.situacao)" style="margin-left: 8px">{{ c.situacaoRotulo }}</span>
+            <div class="muted">{{ c.planoNome }}</div>
+            @if (c.inicioCarencia) {
+              <div class="muted">Carência contada desde {{ c.inicioCarencia | date: 'dd/MM/yyyy' }}</div>
+            }
+          </div>
+        }
+      </div>
+
+      @if (!f.contrato) {
+        <p class="alert info">
+          {{ f.animal.nome }} não tem contrato em andamento, então nada é coberto. Cobre o valor particular ou faça a contratação.
+        </p>
+        <div>
+          <a routerLink="/nova-contratacao" [queryParams]="{ tutor: f.tutor.id }" class="btn btn-primary btn-sm">Contratar plano</a>
+        </div>
+      } @else if (!f.contrato.autoriza) {
+        <p class="alert">
+          O contrato está “{{ f.contrato.situacaoRotulo.toLowerCase() }}” e não autoriza procedimentos. Veja o contrato para regularizar.
+        </p>
+      }
+    </section>
+
+    @if (painel(); as p) {
+      <section id="painel" class="card stack" aria-label="Confirmação">
+        @switch (p.tipo) {
+          @case ('concluir') {
+            <h2>Concluir {{ p.atendimento?.procedimentoNome }}</h2>
+            @if ((p.atendimento?.coparticipacaoCentavos ?? 0) > 0) {
+              <p>
+                Coparticipação de <b>{{ p.atendimento?.coparticipacaoCentavos | reais }}</b>. Ela é paga no dia do atendimento, antes de o cliente sair.
+              </p>
+              <label class="opcao">
+                <input type="radio" name="copart" [checked]="coparticipacao() === 'paga'" (change)="coparticipacao.set('paga')" />
+                <span>O tutor pagou agora</span>
+              </label>
+              <label class="opcao">
+                <input type="radio" name="copart" [checked]="coparticipacao() === 'pendente'" (change)="coparticipacao.set('pendente')" />
+                <span>O tutor não pagou: o valor fica como cobrança pendente</span>
+              </label>
+              @if (invalido()) {
+                <small class="erro">Informe se a coparticipação foi paga.</small>
+              }
+            } @else {
+              <p class="muted">Este procedimento não tem coparticipação. Ao concluir, o uso passa a contar no limite anual.</p>
+            }
+          }
+          @case ('cancelar') {
+            <h2>Cancelar {{ p.atendimento?.procedimentoNome }}</h2>
+            <p class="muted">Um atendimento cancelado não conta no limite anual.</p>
+            <div class="field">
+              <label for="motivo">Motivo</label>
+              <textarea id="motivo" class="inp" style="min-height: 80px" [formControl]="motivo" maxlength="240"></textarea>
+              @if (invalido()) {
+                <small class="erro">Informe o motivo.</small>
+              }
+            </div>
+          }
+          @case ('excecao') {
+            <h2>Pedir exceção de carência: {{ p.procedimento?.nome }}</h2>
+            <p class="muted">
+              A gestão analisa e decide. A exceção vale só para este animal, este procedimento e este dia, e só supera a carência.
+            </p>
+            <div class="field">
+              <label for="dia">Para o dia</label>
+              <input id="dia" class="inp" type="date" style="max-width: 220px" [formControl]="dia" [min]="hoje" />
+            </div>
+            <div class="field">
+              <label for="justificativa">Justificativa</label>
+              <textarea id="justificativa" class="inp" style="min-height: 100px" [formControl]="justificativa" maxlength="500"></textarea>
+              @if (invalido()) {
+                <small class="erro">Explique o motivo, com pelo menos 10 caracteres.</small>
+              }
+            </div>
+          }
+        }
+        <div class="row" style="justify-content: flex-end">
+          <button type="button" class="btn btn-ghost" (click)="fechar()">Voltar</button>
+          <button type="button" class="btn btn-primary" [disabled]="salvando()" (click)="confirmar()">
+            {{ salvando() ? 'Salvando…' : p.tipo === 'concluir' ? 'Concluir atendimento' : p.tipo === 'cancelar' ? 'Cancelar atendimento' : 'Solicitar exceção' }}
+          </button>
+        </div>
+      </section>
+    }
+
+    @if (f.abertos.length) {
+      <section class="stack" aria-label="Atendimentos em andamento">
+        <h2>Em andamento</h2>
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr>
+                <th>Procedimento</th>
+                <th>Autorização</th>
+                <th class="dir">Coparticipação</th>
+                <th><span class="sr">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of f.abertos; track a.id) {
+                <tr>
+                  <td>
+                    <b>{{ a.procedimentoNome }}</b>
+                    @if (a.porExcecao) {
+                      <span class="chip info" style="margin-left: 6px">Por exceção</span>
+                    }
+                  </td>
+                  <td class="num">{{ a.criadoEm | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="num dir">{{ a.coparticipacaoCentavos ? (a.coparticipacaoCentavos | reais) : '—' }}</td>
+                  <td class="dir">
+                    <button type="button" class="btn btn-primary btn-sm" (click)="abrirConclusao(a)">Concluir</button>
+                    <button type="button" class="btn btn-ghost btn-sm" (click)="abrirCancelamento(a)">Cancelar</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    @if (f.contrato) {
+      <section class="stack" aria-label="Cobertura do plano">
+        <h2>O que o plano libera hoje</h2>
+        @for (g of grupos(); track g.categoria) {
+          <div class="tbl">
+            <table style="table-layout: fixed">
+              <thead>
+                <tr>
+                  <th style="width: 30%"><span class="cap">{{ g.categoria }}</span></th>
+                  <th style="width: 22%">Cobertura</th>
+                  <th>Detalhes</th>
+                  <th style="width: 18%"><span class="sr">Ações</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of g.itens; track p.procedimentoId) {
+                  <tr>
+                    <td><b>{{ p.nome }}</b></td>
+                    <td><span [class]="'chip ' + classeEstado(p.estado)">{{ p.estadoRotulo }}</span></td>
+                    <td class="muted">
+                      @switch (p.estado) {
+                        @case ('EM_CARENCIA') {
+                          Libera em <span class="num">{{ p.liberacaoEm | date: 'dd/MM/yyyy' }}</span>
+                        }
+                        @case ('NAO_COBERTO') {
+                          Valor particular <span class="num">{{ p.precoParticularCentavos | reais }}</span>
+                        }
+                        @case ('LIMITE_ESGOTADO') {
+                          <span class="num">{{ p.usosNoPeriodo }} de {{ p.limiteAnual }}</span> usos no ano · particular
+                          <span class="num">{{ p.precoParticularCentavos | reais }}</span>
+                        }
+                        @case ('CONTRATO_INATIVO') {
+                          Contrato sem cobertura
+                        }
+                        @default {
+                          <span class="num">{{ p.usosNoPeriodo }} de {{ p.limiteAnual }}</span> usos no ano
+                          @if (p.coparticipacaoCentavos) {
+                            · coparticipação <span class="num">{{ p.coparticipacaoCentavos | reais }}</span>
+                          }
+                        }
+                      }
+                      @if (p.excecao; as e) {
+                        <div><span [class]="'chip ' + classeExcecao(e.situacao)">Exceção: {{ e.situacaoRotulo }}</span></div>
+                      }
+                    </td>
+                    <td class="dir">
+                      @if (p.liberado) {
+                        <button type="button" class="btn btn-primary btn-sm" [disabled]="salvando()" (click)="autorizar(p)">Autorizar</button>
+                      } @else if (p.estado === 'EM_CARENCIA' && !p.excecao) {
+                        <button type="button" class="btn btn-ghost btn-sm" (click)="abrirExcecao(p)">Pedir exceção</button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @empty {
+          <p class="muted">O plano ainda não tem procedimentos cadastrados. A gestão define a cobertura em Configurações.</p>
+        }
+      </section>
+    }
+
+    @if (f.recentes.length) {
+      <section class="stack" aria-label="Atendimentos recentes">
+        <h2>Atendimentos recentes</h2>
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Procedimento</th>
+                <th>Situação</th>
+                <th class="dir">Coparticipação</th>
+                <th><span class="sr">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of f.recentes; track a.id) {
+                <tr>
+                  <td class="num">{{ a.data | date: 'dd/MM/yyyy' }}</td>
+                  <td>{{ a.procedimentoNome }}</td>
+                  <td>
+                    <span [class]="'chip ' + (a.situacao === 'CONCLUIDO' ? 'ok' : a.situacao === 'AUTORIZADO' ? 'info' : '')">{{ a.situacaoRotulo }}</span>
+                  </td>
+                  <td class="num dir">
+                    @if (a.coparticipacaoCentavos) {
+                      {{ a.coparticipacaoCentavos | reais }}
+                      @if (a.coparticipacaoPendente) {
+                        <span class="chip warn" style="margin-left: 6px">Pendente</span>
+                      }
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td class="dir">
+                    @if (a.coparticipacaoPendente) {
+                      <button type="button" class="btn btn-ghost btn-sm" [disabled]="salvando()" (click)="quitar(a)">Registrar pagamento</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+</div>

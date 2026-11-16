@@ -21,9 +21,15 @@ export const routes: Routes = [
   },
   {
     path: 'veterinario',
-    title: 'Veterinário · Vittalis Pet',
-    canActivate: [perfilGuard('VETERINARIO')],
-    loadComponent: () => import('./areas/veterinario').then((m) => m.Veterinario),
+    title: 'Atendimento · Vittalis Pet',
+    canActivate: [perfilGuard('VETERINARIO', 'GESTAO')],
+    loadComponent: () => import('./pages/atendimento/atendimento').then((m) => m.TelaDeAtendimento),
+  },
+  {
+    path: 'excecoes',
+    title: 'Exceções · Vittalis Pet',
+    canActivate: [perfilGuard('VETERINARIO', 'GESTAO')],
+    loadComponent: () => import('./pages/excecoes/excecoes').then((m) => m.Excecoes),
   },
   {
     path: 'gestao',
