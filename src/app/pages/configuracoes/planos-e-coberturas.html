@@ -1,0 +1,450 @@
+<header class="ph">
+  <div>
+    <h1>Planos e coberturas</h1>
+    <p>Monte tudo aqui. Nada vale até você revisar e aplicar, e dá para descartar o rascunho a qualquer momento.</p>
+  </div>
+  <a class="btn btn-ghost" routerLink="/configuracoes/cobertura" title="Atualizar a cobertura de vários planos de uma vez, com uma planilha">Importar planilha</a>
+</header>
+
+<div class="stack">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert ok" role="status">{{ mensagem }}</p>
+  }
+
+  <div class="abas" role="group" aria-label="Seções da configuração">
+    <button type="button" [attr.aria-pressed]="aba() === 'cobertura'" (click)="irPara('cobertura')">Cobertura dos planos</button>
+    <button type="button" [attr.aria-pressed]="aba() === 'procedimentos'" (click)="irPara('procedimentos')">Procedimentos</button>
+    <button type="button" [attr.aria-pressed]="aba() === 'gerais'" (click)="irPara('gerais')">Regras gerais</button>
+  </div>
+
+  @if (carregando() && !rascunho()) {
+    <p class="muted">Carregando…</p>
+  }
+
+  @if (rascunho()) {
+    <!-- ================= Cobertura dos planos ================= -->
+    @if (aba() === 'cobertura') {
+      <p class="muted" style="margin: 0">
+        Cada coluna é um plano e cada linha, um procedimento. Clique em um plano para mudar nome ou preço, ou em uma célula para mudar a cobertura.
+      </p>
+      <div class="matriz-wrap">
+        <table class="matriz">
+          <thead>
+            <tr>
+              <th class="col-proc" scope="col">Procedimento</th>
+              @for (plano of planos(); track plano.id) {
+                <th scope="col" class="col-plano" [class.desativado]="!plano.ativo">
+                  <button type="button" class="cabeca-plano" [class.mudou]="planoMudou(plano.id)" (click)="abrirPlano(plano)" [attr.aria-label]="'Editar o plano ' + plano.nome">
+                    <b>{{ plano.nome || 'Plano sem nome' }}</b>
+                    <span class="preco">{{ mensalidade(plano) | reais }}<small>/mês</small></span>
+                    <span class="meta">
+                      {{ plano.especie ? 'Só ' + rotuloEspecie(plano.especie).toLowerCase() : 'Qualquer animal' }}
+                      @if (!plano.novo) {
+                        · {{ contratosDoPlano(plano.id) }} {{ contratosDoPlano(plano.id) === 1 ? 'contrato' : 'contratos' }}
+                      }
+                    </span>
+                    <span class="marcas">
+                      @if (plano.novo) {
+                        <span class="chip ok">Novo</span>
+                      } @else if (planoMudou(plano.id)) {
+                        <span class="chip warn">Alterado</span>
+                      }
+                      @if (!plano.ativo) {
+                        <span class="chip">Desativado</span>
+                      }
+                    </span>
+                  </button>
+                </th>
+              }
+              <th class="col-novo" scope="col">
+                <button type="button" class="novo-plano" (click)="novoPlano()" aria-label="Novo plano">
+                  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" /></svg>
+                  <b>Novo plano</b>
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (grupo of grupos(); track grupo.categoria) {
+              <tr class="categoria">
+                <th [attr.colspan]="planos().length + 2" scope="colgroup">{{ grupo.categoria }}</th>
+              </tr>
+              @for (proc of grupo.itens; track proc.id) {
+                <tr>
+                  <th class="col-proc" scope="row">
+                    <span>{{ proc.nome }}</span>
+                    @if (proc.novo) {
+                      <span class="chip ok">Novo</span>
+                    }
+                  </th>
+                  @for (plano of planos(); track plano.id) {
+                    @let c = celula(plano.id, proc.id);
+                    <td [class.desativado]="!plano.ativo">
+                      <button
+                        type="button"
+                        class="celula"
+                        [class.coberto]="!!c"
+                        [class.mudou]="celulaMudou(plano.id, proc.id)"
+                        [disabled]="!plano.ativo"
+                        (click)="abrirCelula(plano.id, proc.id)"
+                        [attr.aria-label]="(c ? 'Coberto' : 'Não coberto') + ': ' + proc.nome + ' no plano ' + plano.nome"
+                      >
+                        @if (c) {
+                          <b>{{ resumoDaCarencia(c) }}</b>
+                          <span>{{ resumoDoUso(c) }}</span>
+                        } @else {
+                          <span class="nao-coberto">Não coberto</span>
+                        }
+                      </button>
+                    </td>
+                  }
+                  <td></td>
+                </tr>
+              }
+            } @empty {
+              <tr>
+                <td [attr.colspan]="planos().length + 2" class="vazio">Cadastre procedimentos na aba Procedimentos para montar a cobertura.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- ================= Procedimentos ================= -->
+    @if (aba() === 'procedimentos') {
+      <div class="row between">
+        <p class="muted" style="margin: 0">Os serviços da clínica. O preço particular entra no comparativo que o tutor vê no orçamento.</p>
+        <button type="button" class="btn btn-primary" (click)="novoProcedimento()">Novo procedimento</button>
+      </div>
+      <div class="tbl">
+        <table>
+          <thead>
+            <tr>
+              <th>Procedimento</th>
+              <th>Categoria</th>
+              <th class="dir">Preço particular</th>
+              <th class="dir">Planos que cobrem</th>
+              <th>Situação</th>
+              <th><span class="sr">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of procedimentos(); track p.id) {
+              <tr [class.inativo]="!p.ativo">
+                <td>
+                  <b>{{ p.nome }}</b>
+                  @if (p.novo) {
+                    <span class="chip ok">Novo</span>
+                  } @else if (procedimentoMudou(p.id)) {
+                    <span class="chip warn">Alterado</span>
+                  }
+                </td>
+                <td><span class="cap">{{ p.categoria }}</span></td>
+                <td class="num dir">{{ p.preco ? 'R$ ' + p.preco : '—' }}</td>
+                <td class="num dir">{{ cobertosDoProcedimento(p.id) }} de {{ planos().length }}</td>
+                <td><span class="chip" [class.ok]="p.ativo">{{ p.ativo ? 'Ativo' : 'Desativado' }}</span></td>
+                <td class="dir"><button type="button" class="btn btn-ghost btn-sm" (click)="abrirProcedimento(p)">Editar</button></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="vazio">Nenhum procedimento ainda.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- ================= Regras gerais ================= -->
+    @if (aba() === 'gerais') {
+      @let g = rascunho()!.gerais;
+      <section class="card stack">
+        <h2>Animais aceitos e descontos</h2>
+        <div class="field">
+          <label for="g-especies">Espécies que podem contratar</label>
+          <input id="g-especies" class="inp" [value]="g.especies" (input)="mudarGeral('especies', $any($event.target).value)" placeholder="cao, gato" autocomplete="off" />
+          <small>Separe por vírgula, em minúsculas e sem acento (por exemplo: cao, gato).</small>
+        </div>
+        <div class="grade">
+          <div class="field">
+            <label for="g-desconto">Desconto do 2º animal (%)</label>
+            <input id="g-desconto" class="inp" inputmode="decimal" [value]="g.desconto" (input)="mudarGeral('desconto', $any($event.target).value)" autocomplete="off" />
+            <small>Para contratos de dois animais. Use 0 se não houver.</small>
+          </div>
+          <div class="field">
+            <label for="g-terceiro">Desconto do 3º animal em diante (%)</label>
+            <input id="g-terceiro" class="inp" inputmode="decimal" [value]="g.descontoTerceiro" (input)="mudarGeral('descontoTerceiro', $any($event.target).value)" autocomplete="off" />
+            <small>O primeiro animal paga o plano inteiro.</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="card stack">
+        <h2>Mensalidade em atraso</h2>
+        <div class="grade">
+          <div class="field">
+            <label for="g-suspensao">Suspender o contrato após (dias)</label>
+            <input id="g-suspensao" class="inp" inputmode="numeric" [value]="g.suspensao" (input)="mudarGeral('suspensao', $any($event.target).value)" autocomplete="off" />
+            <small>Contrato suspenso não autoriza novos atendimentos.</small>
+          </div>
+          <div class="field">
+            <label for="g-cancelamento">Cancelar automaticamente após (dias)</label>
+            <input id="g-cancelamento" class="inp" inputmode="numeric" [value]="g.cancelamento" (input)="mudarGeral('cancelamento', $any($event.target).value)" placeholder="Em branco = nunca" autocomplete="off" />
+            <small>Precisa ser maior que o prazo de suspensão.</small>
+          </div>
+          <div class="field">
+            <label for="g-avisos">Avisar o tutor nos dias</label>
+            <input id="g-avisos" class="inp" [value]="g.avisos" (input)="mudarGeral('avisos', $any($event.target).value)" placeholder="0, 3, 7" autocomplete="off" />
+            <small>Dias depois do vencimento em que o aviso é enviado.</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="card stack" aria-label="Rotinas automáticas">
+        <h2>Rotinas automáticas</h2>
+        <p class="muted">
+          Todo dia, de madrugada, o sistema expira links de assinatura vencidos, suspende contratos em atraso e cancela os suspensos pelos prazos acima
+          (se definidos), renova contratos que completaram a vigência, encerra exceções de carência vencidas e gera a cobrança do mês dos contratos ativos.
+          Tudo fica na Auditoria como feito pelo sistema.
+        </p>
+        <div class="row">
+          <button type="button" class="btn btn-ghost" [disabled]="executando()" (click)="executarRotinas()">{{ executando() ? 'Executando…' : 'Executar agora' }}</button>
+          @if (rotinas(); as r) {
+            <span class="muted" role="status">
+              Concluído: {{ r.linksExpirados }} link(s) expirado(s), {{ r.suspensos }} suspenso(s), {{ r.cancelados }} cancelado(s), {{ r.renovados }} renovado(s),
+              {{ r.excecoesExpiradas }} exceção(ões) encerrada(s), {{ r.cobrancasGeradas }} cobrança(s) gerada(s){{ r.falhas ? ', ' + r.falhas + ' falha(s)' : '' }}.
+            </span>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>
+
+<!-- ================= Barra do rascunho ================= -->
+@if (alteracoes() > 0 && !revisao()) {
+  <div class="barra-de-rascunho" role="region" aria-label="Rascunho">
+    <span>
+      <b>{{ alteracoes() }}</b> {{ alteracoes() === 1 ? 'alteração' : 'alterações' }} no rascunho. <span class="muted">Ainda não valem para ninguém.</span>
+    </span>
+    <span class="acoes">
+      <button type="button" class="btn btn-ghost" (click)="descartar()">Descartar</button>
+      <button type="button" class="btn btn-primary" [disabled]="revisando()" (click)="revisar()">{{ revisando() ? 'Revisando…' : 'Revisar e aplicar' }}</button>
+    </span>
+  </div>
+}
+
+<!-- ================= Painel lateral: editar uma célula, um plano ou um procedimento ================= -->
+@if (painel(); as p) {
+  <div class="painel-fundo" (click)="fecharPainel()"></div>
+  <aside class="painel-lateral" role="dialog" aria-modal="true" [attr.aria-label]="'Editar'">
+    @if (p.tipo === 'celula') {
+      <header>
+        <h2>{{ nomeDoProcedimento(p.procedimentoId) }}</h2>
+        <p class="muted">no plano <b>{{ nomeDoPlano(p.planoId) }}</b></p>
+      </header>
+      <div class="opcoes" role="radiogroup" aria-label="O plano cobre este procedimento?">
+        <button type="button" role="radio" [attr.aria-checked]="p.valor.coberto" [class.ativa]="p.valor.coberto" (click)="ajustar('coberto', true)">Coberto</button>
+        <button type="button" role="radio" [attr.aria-checked]="!p.valor.coberto" [class.ativa]="!p.valor.coberto" (click)="ajustar('coberto', false)">Não coberto</button>
+      </div>
+      @if (p.valor.coberto) {
+        <div class="field">
+          <label for="c-carencia">Carência (dias)</label>
+          <input id="c-carencia" class="inp" inputmode="numeric" [value]="p.valor.carencia" (input)="ajustar('carencia', $any($event.target).value)" autocomplete="off" />
+          <div class="atalhos" aria-label="Prazos comuns">
+            @for (d of prazosComuns; track d) {
+              <button type="button" class="chip-botao" [class.ativa]="p.valor.carencia === '' + d" (click)="ajustar('carencia', '' + d)">{{ d === 0 ? 'Sem carência' : d + ' dias' }}</button>
+            }
+          </div>
+          <small>Quantos dias, depois que o contrato fica ativo, até o tutor poder usar.</small>
+        </div>
+        <div class="field">
+          <label for="c-limite">Quantas vezes por ano</label>
+          <input id="c-limite" class="inp" inputmode="numeric" [value]="p.valor.limite" (input)="ajustar('limite', $any($event.target).value)" autocomplete="off" />
+          <small>Limite de usos em 12 meses. 0 significa que ninguém poderá usar.</small>
+        </div>
+        <div class="field">
+          <label for="c-copart">Coparticipação (R$)</label>
+          <input id="c-copart" class="inp" inputmode="decimal" [value]="p.valor.copart" (input)="ajustar('copart', $any($event.target).value)" placeholder="0,00" autocomplete="off" />
+          <small>Quanto o tutor paga a cada uso. Zero se o plano cobre tudo.</small>
+        </div>
+        <div class="field">
+          <label for="c-intervalo">Intervalo mínimo entre usos (dias)</label>
+          <input id="c-intervalo" class="inp" inputmode="numeric" [value]="p.valor.intervalo" (input)="ajustar('intervalo', $any($event.target).value)" placeholder="Em branco = sem intervalo" autocomplete="off" />
+          <small>Opcional. Por exemplo, 30 para não permitir dois usos no mesmo mês.</small>
+        </div>
+      } @else {
+        <p class="muted">Este plano não cobre {{ nomeDoProcedimento(p.procedimentoId) }}. O tutor paga o valor particular.</p>
+      }
+    }
+
+    @if (p.tipo === 'plano') {
+      <header>
+        <h2>{{ p.valor.novo ? 'Novo plano' : 'Plano ' + nomeDoPlano(p.valor.id) }}</h2>
+      </header>
+      <div class="field">
+        <label for="p-nome">Nome</label>
+        <input id="p-nome" class="inp" [value]="p.valor.nome" (input)="ajustar('nome', $any($event.target).value)" maxlength="80" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="p-mensalidade">Mensalidade (R$)</label>
+        <input id="p-mensalidade" class="inp" inputmode="decimal" [value]="p.valor.mensalidade" (input)="ajustar('mensalidade', $any($event.target).value)" placeholder="89,90" autocomplete="off" />
+        @if (!p.valor.novo && contratosDoPlano(p.valor.id) > 0) {
+          <small>Vale para contratos novos. {{ contratosDoPlano(p.valor.id) }} {{ contratosDoPlano(p.valor.id) === 1 ? 'contrato em andamento mantém' : 'contratos em andamento mantêm' }} o valor que contrataram.</small>
+        } @else {
+          <small>Vale para contratos novos.</small>
+        }
+      </div>
+      <div class="field">
+        <label for="p-especie">Para qual animal?</label>
+        <select id="p-especie" class="inp" (change)="ajustar('especie', $any($event.target).value)">
+          <option value="" [selected]="!p.valor.especie">Qualquer animal aceito</option>
+          @for (e of especiesAceitas(); track e) {
+            <option [value]="e" [selected]="p.valor.especie === e">Só {{ rotuloEspecie(e).toLowerCase() }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="p-descricao">Descrição (opcional)</label>
+        <input id="p-descricao" class="inp" [value]="p.valor.descricao" (input)="ajustar('descricao', $any($event.target).value)" maxlength="240" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="p-copiar">Copiar a cobertura de outro plano</label>
+        <select id="p-copiar" class="inp" (change)="escolherCopiaDe($any($event.target).value)">
+          <option value="" [selected]="!p.copiarDe">{{ p.valor.novo ? 'Começar sem cobertura' : 'Manter a cobertura atual' }}</option>
+          @for (outro of planos(); track outro.id) {
+            @if (outro.id !== p.valor.id) {
+              <option [value]="outro.id" [selected]="p.copiarDe === outro.id">{{ outro.nome }}</option>
+            }
+          }
+        </select>
+        @if (p.copiarDe && !p.valor.novo) {
+          <small>Substitui a cobertura deste plano, no rascunho, pela do plano escolhido.</small>
+        }
+      </div>
+      @if (!p.valor.novo) {
+        <label class="interruptor">
+          <input type="checkbox" [checked]="p.valor.ativo" (change)="ajustar('ativo', $any($event.target).checked)" />
+          <span>
+            <b>Plano à venda</b>
+            <small>Desativado, deixa de ser oferecido. Quem já contratou continua normalmente.</small>
+          </span>
+        </label>
+      }
+    }
+
+    @if (p.tipo === 'procedimento') {
+      <header>
+        <h2>{{ p.valor.novo ? 'Novo procedimento' : p.valor.nome }}</h2>
+      </header>
+      <div class="field">
+        <label for="x-nome">Nome</label>
+        <input id="x-nome" class="inp" [value]="p.valor.nome" (input)="ajustar('nome', $any($event.target).value)" maxlength="120" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="x-categoria">Categoria</label>
+        <input id="x-categoria" class="inp" list="x-categorias" [value]="p.valor.categoria" (input)="ajustar('categoria', $any($event.target).value)" maxlength="40" autocomplete="off" />
+        <datalist id="x-categorias">
+          @for (c of categorias(); track c) {
+            <option [value]="c"></option>
+          }
+        </datalist>
+        <small>Agrupa as linhas da matriz (consulta, vacina, exame, cirurgia…). Escolha uma existente ou digite uma nova.</small>
+      </div>
+      <div class="field">
+        <label for="x-preco">Preço particular (R$)</label>
+        <input id="x-preco" class="inp" inputmode="decimal" [value]="p.valor.preco" (input)="ajustar('preco', $any($event.target).value)" placeholder="120,00" autocomplete="off" />
+        <small>Quanto a clínica cobra de quem não tem plano. Alimenta o comparativo do orçamento.</small>
+      </div>
+      @if (!p.valor.novo) {
+        <label class="interruptor">
+          <input type="checkbox" [checked]="p.valor.ativo" (change)="ajustar('ativo', $any($event.target).checked)" />
+          <span>
+            <b>Procedimento ativo</b>
+            <small>Desativado, sai da matriz e deixa de ser oferecido. O histórico fica guardado.</small>
+          </span>
+        </label>
+      }
+    }
+
+    @if (erroDoPainel(); as mensagem) {
+      <p class="alert" role="alert">{{ mensagem }}</p>
+    }
+    <footer>
+      @if (p.tipo !== 'celula' && p.valor.novo && noRascunho(p.valor.id)) {
+        <button type="button" class="btn btn-ghost perigo" (click)="removerNovo()">Remover do rascunho</button>
+      }
+      <span class="espaco"></span>
+      <button type="button" class="btn btn-ghost" (click)="fecharPainel()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="guardarPainel()">Guardar no rascunho</button>
+    </footer>
+  </aside>
+}
+
+<!-- ================= Revisão antes de aplicar ================= -->
+@if (revisao(); as r) {
+  <div class="painel-fundo" (click)="voltarAoRascunho()"></div>
+  <aside class="painel-lateral largo" role="dialog" aria-modal="true" aria-label="Revisar alterações">
+    <header>
+      <h2>Revise antes de aplicar</h2>
+      <p class="muted">É isto que vai mudar. Se algo não estiver certo, volte e ajuste: nada foi gravado ainda.</p>
+    </header>
+
+    @if (r.bloqueios.length) {
+      <div class="alert" role="alert">
+        <b>Isto impede a aplicação:</b>
+        <ul>
+          @for (b of r.bloqueios; track b) {
+            <li>{{ b }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (r.avisos.length) {
+      <div class="alert aviso-amarelo" role="status">
+        <b>Confira com atenção:</b>
+        <ul>
+          @for (a of r.avisos; track a) {
+            <li>{{ a }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    @for (grupo of mudancasPorGrupo(); track grupo.area) {
+      <section class="grupo-da-revisao">
+        <h3>{{ grupo.titulo }}</h3>
+        <ul>
+          @for (m of grupo.itens; track m.titulo + m.detalhe) {
+            <li><b>{{ m.titulo }}</b><span>{{ m.detalhe }}</span></li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (!r.mudancas.length) {
+      <p class="muted">Não há nenhuma diferença em relação ao que já está valendo.</p>
+    }
+
+    @if (temCobertura()) {
+      <div class="field">
+        <label for="vigencia">A nova cobertura vale a partir de</label>
+        <input id="vigencia" class="inp" type="date" [min]="hoje" [value]="vigencia() ?? hoje" (change)="mudarVigencia($any($event.target).value)" />
+        <small>Contratos já feitos mantêm a cobertura que tinham quando foram feitos. A nova vale para quem contratar a partir desta data.</small>
+      </div>
+    }
+
+    <footer>
+      <span class="espaco"></span>
+      <button type="button" class="btn btn-ghost" (click)="voltarAoRascunho()">Voltar e ajustar</button>
+      <button type="button" class="btn btn-primary" [disabled]="!r.podeAplicar || salvando()" (click)="aplicar()">
+        {{ salvando() ? 'Aplicando…' : 'Aplicar tudo (' + r.mudancas.length + ')' }}
+      </button>
+    </footer>
+  </aside>
+}

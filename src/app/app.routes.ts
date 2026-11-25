@@ -2,8 +2,8 @@ import { Routes } from '@angular/router';
 import { autenticadoGuard, perfilGuard, visitanteGuard } from './core/auth/guards';
 
 /**
- * Áreas por perfil: veterinário (atendimento), gestão (painel, usuários e auditoria) e cliente (portal do
- * tutor, com acesso próprio, ainda sem login nesta versão).
+ * Áreas por perfil: veterinário (atendimento) e gestão (painel, usuários, auditoria e configurações). O portal do
+ * tutor ainda não existe nesta versão.
  */
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'entrar' },
@@ -33,9 +33,9 @@ export const routes: Routes = [
   },
   {
     path: 'gestao',
-    title: 'Gestão · Vittalis Pet',
+    title: 'Painel · Vittalis Pet',
     canActivate: [perfilGuard('GESTAO')],
-    loadComponent: () => import('./areas/gestao').then((m) => m.Gestao),
+    loadComponent: () => import('./pages/painel/painel').then((m) => m.PainelDaGestao),
   },
   {
     path: 'usuarios',
@@ -99,30 +99,23 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'planos' },
       {
         path: 'planos',
-        title: 'Planos · Vittalis Pet',
-        loadComponent: () => import('./pages/configuracoes/planos').then((m) => m.Planos),
+        title: 'Planos e coberturas · Vittalis Pet',
+        loadComponent: () => import('./pages/configuracoes/planos-e-coberturas').then((m) => m.PlanosECoberturas),
       },
-      {
-        path: 'procedimentos',
-        title: 'Procedimentos · Vittalis Pet',
-        loadComponent: () => import('./pages/configuracoes/procedimentos').then((m) => m.Procedimentos),
-      },
+      // As telas antigas viraram abas de "Planos e coberturas"; links e favoritos antigos continuam levando para lá.
+      { path: 'procedimentos', pathMatch: 'full', redirectTo: 'planos' },
+      { path: 'parametros', pathMatch: 'full', redirectTo: 'planos' },
       {
         path: 'cobertura',
-        title: 'Cobertura · Vittalis Pet',
+        title: 'Importar cobertura · Vittalis Pet',
         loadComponent: () => import('./pages/configuracoes/cobertura').then((m) => m.Cobertura),
       },
       {
-        path: 'parametros',
-        title: 'Parâmetros · Vittalis Pet',
-        loadComponent: () => import('./pages/configuracoes/parametros').then((m) => m.Parametros),
+        path: 'contrato',
+        title: 'Modelo do contrato · Vittalis Pet',
+        loadComponent: () => import('./pages/configuracoes/contrato-modelo').then((m) => m.ModeloDoContratoPagina),
       },
     ],
-  },
-  {
-    path: 'cliente',
-    title: 'Cliente · Vittalis Pet',
-    loadComponent: () => import('./areas/cliente').then((m) => m.Cliente),
   },
   { path: '**', redirectTo: 'entrar' },
 ];

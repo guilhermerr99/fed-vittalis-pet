@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { App } from './app';
@@ -42,17 +43,29 @@ describe('App', () => {
   });
 
   it('gestão vê painel, configurações, usuários e auditoria', () => {
-    expect(links(entrarComo('GESTAO'))).toEqual(['Atendimento', 'Nova contratação', 'Contratos', 'Tutores e animais', 'Exceções', 'Painel', 'Usuários', 'Auditoria', 'Planos', 'Procedimentos', 'Cobertura', 'Parâmetros']);
+    expect(links(entrarComo('GESTAO'))).toEqual(['Atendimento', 'Nova contratação', 'Contratos', 'Tutores e animais', 'Exceções', 'Painel', 'Usuários', 'Auditoria', 'Planos e coberturas', 'Modelo do contrato']);
   });
 
   it('suporte técnico vê só os usuários', () => {
     expect(links(entrarComo('ADMIN_TECNICO'))).toEqual(['Usuários']);
   });
 
-  it('mostra o nome e o perfil de quem está logado, e o botão de sair', () => {
+  it('mostra o nome e o perfil de quem está logado, com alterar senha e sair no menu de três pontinhos', () => {
     const el = entrarComo('GESTAO');
     expect(el.querySelector('.quem')?.textContent).toContain('Pessoa de Teste');
     expect(el.querySelector('.quem')?.textContent).toContain('Gestão');
-    expect(Array.from(el.querySelectorAll('button')).some((b) => b.textContent?.includes('Sair'))).toBe(true);
+
+    // Fechado, o menu não aparece; aberto, traz as duas ações.
+    expect(el.querySelector('.popover')).toBeNull();
+    expect(el.querySelector('.topo')?.textContent).not.toContain('Alterar senha');
+    (el.querySelector('.rodape .mais') as HTMLButtonElement).click();
+    TestBed.inject(ApplicationRef).tick();
+    const itens = Array.from(el.querySelectorAll('.rodape .popover [role=menuitem]')).map((i) => i.textContent?.trim());
+    expect(itens).toEqual(['Alterar senha', 'Sair']);
+
+    // Clicar fora fecha.
+    document.body.click();
+    TestBed.inject(ApplicationRef).tick();
+    expect(el.querySelector('.popover')).toBeNull();
   });
 });

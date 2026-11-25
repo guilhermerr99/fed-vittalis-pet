@@ -1,11 +1,9 @@
 <header class="ph">
   <div>
-    <h1>Cobertura dos planos</h1>
-    <p>O que cada plano cobre, com carência, limite por ano e coparticipação. Cada alteração gera uma nova versão e preserva o histórico.</p>
+    <h1>Importar cobertura</h1>
+    <p>Atualize a cobertura de vários planos de uma vez com uma planilha. Para mudanças do dia a dia, use a tela Planos e coberturas.</p>
   </div>
-  @if (!importando()) {
-    <button type="button" class="btn" (click)="abrirImportacao()"><app-icone nome="upload" [tamanho]="16" />Importar planilha</button>
-  }
+  <a class="btn btn-ghost" routerLink="/configuracoes/planos"><app-icone nome="setaEsq" [tamanho]="16" />Planos e coberturas</a>
 </header>
 
 <div class="stack">
@@ -13,226 +11,86 @@
     <p class="alert" role="alert">{{ mensagem }}</p>
   }
   @if (aviso(); as mensagem) {
-    <p class="alert ok" role="status">{{ mensagem }}</p>
+    <p class="alert ok" role="status">{{ mensagem }} <a routerLink="/configuracoes/planos">Ver na matriz</a></p>
   }
 
-  @if (importando()) {
-    <section class="card stack" aria-label="Importar planilha">
-      <div class="row between">
-        <h2>Importar planilha de cobertura</h2>
-        <button type="button" class="btn btn-ghost btn-sm" (click)="fecharImportacao()">Fechar</button>
-      </div>
-      <p class="muted">
-        Colunas: plano, procedimento, carencia_dias, limite_anual, coparticipacao_reais e, opcionalmente, intervalo_minimo_dias.
-        Primeiro mostramos o que mudaria; nada é gravado até você aplicar. Se houver qualquer erro, nada é alterado.
-      </p>
-      <div class="row">
-        <button type="button" class="btn btn-sm" (click)="baixarModelo()">Baixar modelo com os planos e procedimentos atuais</button>
-        <label class="btn btn-sm" for="arquivo">Escolher arquivo CSV</label>
-        <input id="arquivo" class="sr" type="file" accept=".csv,text/csv,text/plain" (change)="escolherArquivo($event)" />
-        @if (nomeDoArquivo(); as nome) {
-          <span class="muted">{{ nome }}</span>
-        }
-        <button type="button" class="btn btn-primary btn-sm" [disabled]="!nomeDoArquivo() || salvando()" (click)="gerarPrevia()">
-          Ver o que mudaria
-        </button>
-      </div>
-
-      @if (previa(); as p) {
-        <div class="row">
-          <span class="chip ok">{{ p.novas }} novas</span>
-          <span class="chip warn">{{ p.alteradas }} alteradas</span>
-          <span class="chip">{{ p.iguais }} iguais</span>
-          @if (p.erros.length) {
-            <span class="chip bad">{{ p.erros.length }} com erro</span>
-          }
-        </div>
-
-        @if (p.erros.length) {
-          <div class="alert" role="alert">
-            <b>Corrija a planilha antes de aplicar:</b>
-            <ul>
-              @for (e of p.erros; track e.numero + e.mensagem) {
-                <li>Linha {{ e.numero }}: {{ e.mensagem }}</li>
-              }
-            </ul>
-          </div>
-        } @else {
-          <div class="tbl">
-            <table>
-              <thead>
-                <tr>
-                  <th>Linha</th>
-                  <th>Plano</th>
-                  <th>Procedimento</th>
-                  <th>Situação</th>
-                  <th>Antes</th>
-                  <th>Depois</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (i of p.itens; track i.linha) {
-                  <tr>
-                    <td class="num">{{ i.linha }}</td>
-                    <td>{{ i.plano }}</td>
-                    <td>{{ i.procedimento }}</td>
-                    <td>
-                      <span class="chip" [class.ok]="i.acao === 'NOVA'" [class.warn]="i.acao === 'ALTERADA'">{{ rotuloDaAcao(i.acao) }}</span>
-                    </td>
-                    <td class="muted">{{ resumo(i.antes) }}</td>
-                    <td>{{ resumo(i.depois) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <div class="row" style="justify-content: flex-end">
-            <div class="field" style="min-width: 220px">
-              <label for="vigencia">Vale a partir de (opcional)</label>
-              <input id="vigencia" class="inp sm" type="date" [value]="vigenciaDaImportacao()" (input)="mudarVigencia($event)" />
-            </div>
-            <button type="button" class="btn btn-primary" [disabled]="!podeAplicar() || salvando()" (click)="aplicar()">
-              {{ salvando() ? 'Aplicando…' : 'Aplicar planilha' }}
-            </button>
-          </div>
-        }
+  <section class="card stack" aria-label="Importar planilha">
+    <h2>1. Escolha a planilha</h2>
+    <p class="muted">
+      Colunas: plano, procedimento, carencia_dias, limite_anual, coparticipacao_reais e, opcionalmente, intervalo_minimo_dias.
+      Primeiro mostramos o que mudaria; nada é gravado até você aplicar. Se houver qualquer erro, nada é alterado.
+    </p>
+    <div class="row">
+      <button type="button" class="btn btn-ghost btn-sm" (click)="baixarModelo()">Baixar modelo com os planos e procedimentos atuais</button>
+      <label class="btn btn-ghost btn-sm" for="arquivo">Escolher arquivo CSV</label>
+      <input id="arquivo" class="sr" type="file" accept=".csv,text/csv,text/plain" (change)="escolherArquivo($event)" />
+      @if (nomeDoArquivo(); as nome) {
+        <span class="muted">{{ nome }}</span>
       }
-    </section>
-  }
-
-  <div class="row">
-    <div class="field" style="min-width: 260px">
-      <label for="plano">Plano</label>
-      <select id="plano" class="inp" [value]="planoId() ?? ''" (change)="escolher($any($event.target).value)">
-        @for (p of planos(); track p.id) {
-          <option [value]="p.id">{{ p.nome }}{{ p.ativo ? '' : ' (desativado)' }}</option>
-        }
-      </select>
+      <button type="button" class="btn btn-primary btn-sm" [disabled]="!nomeDoArquivo() || salvando()" (click)="gerarPrevia()">Ver o que mudaria</button>
     </div>
-    @if (plano(); as pl) {
-      <p class="muted" style="margin: 0; align-self: flex-end">
-        {{ pl.mensalidadeCentavos | reais }}/mês · {{ cobertos() }} de {{ itens().length }} procedimentos cobertos
-      </p>
-    }
-  </div>
+  </section>
 
-  <div class="tbl">
-    <table>
-      <thead>
-        <tr>
-          <th>Procedimento</th>
-          <th class="dir">Carência</th>
-          <th class="dir">Limite/ano</th>
-          <th class="dir">Coparticipação</th>
-          <th class="dir">Intervalo mín.</th>
-          <th>Vigente desde</th>
-          <th><span class="sr">Ações</span></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (i of itens(); track i.procedimento.id) {
-          @if (editando() === i.procedimento.id) {
-            <tr class="edicao">
-              <td>
-                <b>{{ i.procedimento.nome }}</b>
-                <div><span class="muted cap">{{ i.procedimento.categoria }}</span></div>
-              </td>
-              <td colspan="6">
-                <form [formGroup]="form" class="row" style="align-items: flex-end" (ngSubmit)="salvarRegra(i)" novalidate>
-                  <div class="field">
-                    <label [attr.for]="'c' + i.procedimento.id">Carência (dias)</label>
-                    <input [id]="'c' + i.procedimento.id" class="inp sm" inputmode="numeric" formControlName="carencia" style="width: 90px" />
-                  </div>
-                  <div class="field">
-                    <label [attr.for]="'l' + i.procedimento.id">Limite/ano</label>
-                    <input [id]="'l' + i.procedimento.id" class="inp sm" inputmode="numeric" formControlName="limite" style="width: 90px" />
-                  </div>
-                  <div class="field">
-                    <label [attr.for]="'p' + i.procedimento.id">Coparticipação (R$)</label>
-                    <input [id]="'p' + i.procedimento.id" class="inp sm" inputmode="decimal" formControlName="copart" style="width: 110px" />
-                  </div>
-                  <div class="field">
-                    <label [attr.for]="'i' + i.procedimento.id">Intervalo mín. (dias)</label>
-                    <input [id]="'i' + i.procedimento.id" class="inp sm" inputmode="numeric" formControlName="intervalo" style="width: 110px" />
-                  </div>
-                  <div class="field">
-                    <label [attr.for]="'d' + i.procedimento.id">Vale a partir de</label>
-                    <input [id]="'d' + i.procedimento.id" class="inp sm" type="date" formControlName="desde" />
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-sm" [disabled]="salvando()">Salvar</button>
-                  <button type="button" class="btn btn-ghost btn-sm" (click)="cancelarEdicao()">Cancelar</button>
-                </form>
-              </td>
-            </tr>
-          } @else {
-            <tr>
-              <td>
-                <b>{{ i.procedimento.nome }}</b>
-                <div><span class="muted cap">{{ i.procedimento.categoria }}</span></div>
-              </td>
-              @if (i.regra; as r) {
-                <td class="num dir">{{ r.carenciaDias }} d</td>
-                <td class="num dir">{{ r.limiteAnual }}</td>
-                <td class="num dir">{{ r.coparticipacaoCentavos | reais }}</td>
-                <td class="num dir">{{ r.intervaloMinimoDias ? r.intervaloMinimoDias + ' d' : '—' }}</td>
-                <td class="num">{{ r.vigenciaInicio | date: 'dd/MM/yyyy' }}</td>
-                <td class="dir">
-                  <button type="button" class="btn btn-ghost btn-sm" (click)="abrirEdicao(i)">Editar</button>
-                  <button type="button" class="btn btn-ghost btn-sm" (click)="verHistorico(i)">Histórico</button>
-                  <button type="button" class="btn btn-ghost btn-sm" (click)="deixarDeCobrir(i)" title="Deixa de cobrir a partir de hoje; o histórico é mantido">Retirar</button>
-                </td>
-              } @else {
-                <td colspan="5"><span class="chip">Não coberto</span></td>
-                <td class="dir">
-                  <button type="button" class="btn btn-ghost btn-sm" (click)="abrirEdicao(i)">Cobrir</button>
-                  <button type="button" class="btn btn-ghost btn-sm" (click)="verHistorico(i)">Histórico</button>
-                </td>
-              }
-            </tr>
-          }
-        } @empty {
-          <tr>
-            <td colspan="7" class="vazio">{{ carregando() ? 'Carregando…' : 'Cadastre procedimentos para definir a cobertura.' }}</td>
-          </tr>
+  @if (previa(); as p) {
+    <section class="card stack" aria-label="O que mudaria">
+      <h2>2. Confira e aplique</h2>
+      <div class="row">
+        <span class="chip ok">{{ p.novas }} novas</span>
+        <span class="chip warn">{{ p.alteradas }} alteradas</span>
+        <span class="chip">{{ p.iguais }} iguais</span>
+        @if (p.erros.length) {
+          <span class="chip bad">{{ p.erros.length }} com erro</span>
         }
-      </tbody>
-    </table>
-  </div>
+      </div>
 
-  @if (historico(); as h) {
-    <section class="card stack" aria-label="Histórico de versões">
-      <div class="row between">
-        <h2>Histórico · {{ h.nome }}</h2>
-        <button type="button" class="btn btn-ghost btn-sm" (click)="fecharHistorico()">Fechar</button>
-      </div>
-      <div class="tbl">
-        <table>
-          <thead>
-            <tr>
-              <th>De</th>
-              <th>Até</th>
-              <th class="dir">Carência</th>
-              <th class="dir">Limite/ano</th>
-              <th class="dir">Coparticipação</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (v of h.versoes; track v.id) {
-              <tr>
-                <td class="num">{{ v.vigenciaInicio | date: 'dd/MM/yyyy' }}</td>
-                <td class="num">{{ v.vigenciaFim ? (v.vigenciaFim | date: 'dd/MM/yyyy') : 'em vigor' }}</td>
-                <td class="num dir">{{ v.carenciaDias }} d</td>
-                <td class="num dir">{{ v.limiteAnual }}</td>
-                <td class="num dir">{{ v.coparticipacaoCentavos | reais }}</td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="5" class="vazio">Este procedimento nunca teve regra neste plano.</td>
-              </tr>
+      @if (p.erros.length) {
+        <div class="alert" role="alert">
+          <b>Corrija a planilha antes de aplicar:</b>
+          <ul>
+            @for (e of p.erros; track e.numero + e.mensagem) {
+              <li>Linha {{ e.numero }}: {{ e.mensagem }}</li>
             }
-          </tbody>
-        </table>
-      </div>
+          </ul>
+        </div>
+      } @else {
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr>
+                <th>Linha</th>
+                <th>Plano</th>
+                <th>Procedimento</th>
+                <th>Situação</th>
+                <th>Antes</th>
+                <th>Depois</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (i of p.itens; track i.linha) {
+                <tr>
+                  <td class="num">{{ i.linha }}</td>
+                  <td>{{ i.plano }}</td>
+                  <td>{{ i.procedimento }}</td>
+                  <td>
+                    <span class="chip" [class.ok]="i.acao === 'NOVA'" [class.warn]="i.acao === 'ALTERADA'">{{ rotuloDaAcao(i.acao) }}</span>
+                  </td>
+                  <td class="muted">{{ resumo(i.antes) }}</td>
+                  <td>{{ resumo(i.depois) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="row" style="justify-content: flex-end">
+          <div class="field" style="min-width: 220px">
+            <label for="vigencia">Vale a partir de (opcional)</label>
+            <input id="vigencia" class="inp sm" type="date" [value]="vigenciaDaImportacao()" (input)="mudarVigencia($event)" />
+          </div>
+          <button type="button" class="btn btn-primary" [disabled]="!podeAplicar() || salvando()" (click)="aplicar()">
+            {{ salvando() ? 'Aplicando…' : 'Aplicar planilha' }}
+          </button>
+        </div>
+      }
     </section>
   }
 </div>
