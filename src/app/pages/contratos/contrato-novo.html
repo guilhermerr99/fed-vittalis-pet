@@ -1,196 +1,481 @@
-<header class="ph">
+﻿<header class="ph">
   <div>
     <h1>Nova contratação</h1>
-    <p>Escolha o tutor, os animais e o plano. O valor vem do plano e dos Parâmetros; ninguém o digita.</p>
+    <p>Número do contrato, valor total e parcelas são gerados automaticamente. O valor vem do plano e dos Parâmetros; ninguém o digita.</p>
   </div>
-  <a routerLink="/contratos" class="btn btn-ghost">Voltar</a>
 </header>
 
-<div class="stack" style="max-width: 920px">
+<app-passos [itens]="passos" [atual]="etapa() > 6 ? 7 : etapa()" rotulo="Etapas da contratação" />
+
+<div class="stack">
   @if (erro(); as mensagem) {
-    @if (!simulacao()) {
-      <p class="alert" role="alert">{{ mensagem }}</p>
-    }
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert info" role="status">{{ mensagem }}</p>
   }
 
-  <!-- 1. Tutor -->
-  <section class="card stack passo" aria-label="Tutor">
-    <div class="passo-cab"><span class="n">1</span><h2>Tutor</h2></div>
-
-    @if (tutor(); as t) {
-      <div class="row between">
-        <div>
-          <b>{{ t.nome }}</b>
-          <div class="muted num">CPF {{ t.cpfFormatado }} · {{ formatarTelefone(t.telefone) }}</div>
-        </div>
-        <button type="button" class="btn btn-ghost btn-sm" (click)="trocarTutor()">Trocar tutor</button>
-      </div>
-    } @else if (cadastrandoTutor()) {
-      <div class="subform">
-        <h3>Novo tutor</h3>
-        <app-tutor-form
-          [cpfInicial]="cpfDaBusca()"
-          [salvando]="salvando()"
-          rotulo="Cadastrar e continuar"
-          (enviar)="cadastrarTutor($event)"
-          (cancelar)="cadastrandoTutor.set(false)"
-        />
-      </div>
-    } @else {
-      <div class="field" style="max-width: 520px">
-        <label for="busca">Buscar o tutor</label>
-        <input id="busca" class="inp" type="search" [formControl]="busca" placeholder="Nome, CPF, telefone, nome do animal ou microchip" autocomplete="off" />
-        <small>Se o tutor ainda não existe, cadastre abaixo.</small>
-      </div>
-
-      @if (resultados(); as lista) {
-        @if (lista.length) {
-          <ul class="lista-escolha">
-            @for (r of lista; track r.id) {
-              <li>
-                <div>
-                  <b>{{ r.nome }}</b>
-                  <div class="muted num">{{ r.cpfMascarado }} · {{ formatarTelefone(r.telefone) }}</div>
-                  <div class="muted">
-                    @for (a of r.animais; track a.id) {
-                      <span class="chip" [class.ok]="a.ativo">{{ a.nome }} · {{ rotuloEspecie(a.especie) }}</span>
-                    } @empty {
-                      Nenhum animal cadastrado
-                    }
-                  </div>
-                </div>
-                <button type="button" class="btn btn-primary btn-sm" (click)="escolherTutor(r.id)">Selecionar</button>
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="muted">Nenhum tutor encontrado para essa busca.</p>
-        }
-      } @else if (buscando()) {
-        <p class="muted">Buscando…</p>
-      }
-
-      <div>
-        <button type="button" class="btn btn-ghost" (click)="cadastrandoTutor.set(true)">Cadastrar novo tutor</button>
-      </div>
-    }
-  </section>
-
-  <!-- 2. Animais -->
-  <section class="card stack passo" [class.bloqueado]="!tutor()" aria-label="Animais">
-    <div class="passo-cab"><span class="n">2</span><h2>Animais</h2></div>
-
-    @if (tutor(); as t) {
-      <p class="muted">Marque os animais deste contrato. O primeiro marcado paga o plano inteiro; os demais têm o desconto dos Parâmetros.</p>
-
-      <div class="stack" style="gap: 10px">
-        @for (a of t.animais; track a.id) {
-          <label class="opcao" [class.desativada]="!elegivel(a)">
-            <input type="checkbox" [checked]="selecionados().includes(a.id)" [disabled]="!elegivel(a)" (change)="alternarAnimal(a)" />
-            <span style="flex: 1">
-              <b>{{ a.nome }}</b>
-              <span class="muted"> · {{ rotuloEspecie(a.especie) }}{{ a.raca ? ' · ' + a.raca : '' }} · {{ idade(a) }}</span>
-            </span>
-            @if (!elegivel(a)) {
-              <span class="chip bad">{{ motivoDeNaoEntrar(a) }}</span>
-            } @else if (ordem(a) > 0) {
-              <span class="chip info">{{ ordem(a) }}º animal</span>
-            }
-          </label>
-        }
-      </div>
-
-      @if (cadastrandoAnimal()) {
-        <div class="subform">
-          <app-animal-form
-            [especies]="especies()"
-            [salvando]="salvando()"
-            (enviar)="cadastrarAnimal($event)"
-            (cancelar)="cadastrandoAnimal.set(false)"
-          />
-        </div>
-      } @else {
-        <div>
-          <button type="button" class="btn btn-ghost btn-sm" (click)="cadastrandoAnimal.set(true)">
-            {{ t.animais.length ? 'Cadastrar outro animal' : 'Cadastrar animal' }}
-          </button>
-        </div>
-      }
-    } @else {
-      <p class="muted">Escolha o tutor primeiro.</p>
-    }
-  </section>
-
-  <!-- 3. Plano -->
-  <section class="card stack passo" [class.bloqueado]="!selecionados().length" aria-label="Plano">
-    <div class="passo-cab"><span class="n">3</span><h2>Plano</h2></div>
-
-    @if (selecionados().length) {
-      <div class="stack" style="gap: 10px">
-        @for (p of planos(); track p.id) {
-          <label class="opcao">
-            <input type="radio" name="plano" [value]="p.id" [checked]="planoId() === p.id" (change)="escolherPlano(p.id)" />
-            <span style="flex: 1">
-              <b>{{ p.nome }}</b>
-              @if (p.descricao) {
-                <span class="muted"> · {{ p.descricao }}</span>
-              }
-            </span>
-            <span class="num"><b>{{ p.mensalidadeCentavos | reais }}</b>&ngsp;<span class="muted">por mês, por animal</span></span>
-          </label>
-        } @empty {
-          <p class="muted">Não há plano ativo. A gestão cadastra os planos em Configurações.</p>
-        }
-      </div>
-    } @else {
-      <p class="muted">Escolha pelo menos um animal primeiro.</p>
-    }
-  </section>
-
-  <!-- Resumo -->
-  @if (simulacao(); as s) {
-    <section class="card stack" aria-label="Resumo da contratação">
-      <h2>Resumo</h2>
-      <div class="tbl">
-        <table>
-          <thead>
-            <tr>
-              <th>Animal</th>
-              <th class="dir">Mensalidade</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (a of escolhidos(); track a.id; let i = $index) {
-              <tr>
-                <td>
-                  <b>{{ a.nome }}</b>
-                  <span class="muted"> · {{ i + 1 }}º animal{{ i > 0 && s.descontoPercentual > 0 ? ' · desconto de ' + s.descontoPercentual + '%' : '' }}</span>
-                </td>
-                <td class="num dir">{{ s.mensalidadesCentavos[i] | reais }}</td>
-              </tr>
-            }
-          </tbody>
-          <tfoot>
-            <tr>
-              <td><b>Total por mês</b></td>
-              <td class="num dir"><b>{{ s.totalCentavos | reais }}</b></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <p class="muted">
-        O contrato nasce como rascunho. Na tela seguinte você o envia para assinatura e acompanha o pagamento. A carência só começa a contar
-        quando o primeiro pagamento for confirmado.
+  @if (etapa() === 7) {
+    <!-- ============ Contrato ativo ============ -->
+    @let c = contrato()!;
+    <section class="card sucesso" aria-label="Contrato ativo">
+      <span class="marca"><app-icone nome="visto" [tamanho]="44" /></span>
+      <h2>Contrato ativo</h2>
+      <p>
+        O plano de {{ escolhidos().length > 1 ? 'os animais' : escolhidos()[0]?.nome }} foi ativado no contrato <b class="num">{{ c.numero }}</b>.
+        A carência começa a contar agora{{ c.ativadoEm ? ', em ' + (c.ativadoEm | date: 'dd/MM/yyyy') : '' }}.
       </p>
-      @if (erro(); as mensagem) {
-        <p class="alert" role="alert">{{ mensagem }}</p>
-      }
-      <div class="row" style="justify-content: flex-end">
-        <a routerLink="/contratos" class="btn btn-ghost">Cancelar</a>
-        <button type="button" class="btn btn-primary" [disabled]="salvando()" (click)="criar()">
-          {{ salvando() ? 'Criando…' : 'Criar contrato' }}
-        </button>
+      <div class="row" style="justify-content: center; flex-wrap: wrap">
+        <a [routerLink]="['/contratos', c.id]" class="btn btn-primary">Abrir o contrato</a>
+        <button type="button" class="btn btn-ghost" (click)="reiniciar()">Nova contratação</button>
       </div>
     </section>
+  } @else {
+    <div class="cols" [class.sozinho]="etapa() === 1 || etapa() === 3">
+      <section class="card fcol" aria-label="Passo da contratação">
+        @switch (etapa()) {
+          @case (1) {
+            <!-- ============ 1. Tutor ============ -->
+            <div>
+              <h2>Dados do tutor</h2>
+              <p class="sub">Informe os dados cadastrais. Se o CPF já estiver cadastrado, o tutor existente é usado.</p>
+            </div>
+
+            <form class="stack" [formGroup]="formTutor" (ngSubmit)="continuarTutor()" novalidate>
+              <div class="fgrid">
+                <div class="field">
+                  <label for="cpf">CPF</label>
+                  <input id="cpf" class="inp num" inputmode="numeric" formControlName="cpf" placeholder="000.000.000-00" autocomplete="off" (input)="mascarar('cpf', $event)" />
+                  @if (formTutor.controls.cpf.touched && formTutor.controls.cpf.invalid) {
+                    <small class="erro">CPF inválido. Confira os números.</small>
+                  } @else if (situacaoCpf() === 'verificando') {
+                    <small class="muted">Conferindo o CPF…</small>
+                  } @else if (situacaoCpf() === 'livre') {
+                    <span class="chip ok"><app-icone nome="visto" [tamanho]="14" />CPF válido e ainda não cadastrado</span>
+                  } @else if (situacaoCpf() === 'existente') {
+                    <span class="chip info"><app-icone nome="info" [tamanho]="14" />CPF já cadastrado: {{ tutorDoCpf()?.nome }}</span>
+                  }
+                </div>
+
+                <div class="field">
+                  <label for="nome">Nome completo</label>
+                  <input id="nome" class="inp" formControlName="nome" autocomplete="off" />
+                  @if (formTutor.controls.nome.touched && formTutor.controls.nome.invalid && situacaoCpf() !== 'existente') {
+                    <small class="erro">Informe o nome e o sobrenome.</small>
+                  }
+                </div>
+
+                <div class="field">
+                  <label for="telefone">Celular (WhatsApp)</label>
+                  <input id="telefone" class="inp num" inputmode="tel" formControlName="telefone" placeholder="(11) 91234-5678" autocomplete="off" (input)="mascarar('telefone', $event)" />
+                  @if (formTutor.controls.telefone.touched && formTutor.controls.telefone.invalid && situacaoCpf() !== 'existente') {
+                    <small class="erro">Informe o DDD e o número do celular.</small>
+                  }
+                </div>
+
+                <div class="field">
+                  <label for="email">E-mail (opcional)</label>
+                  <input id="email" class="inp" type="email" formControlName="email" autocomplete="off" />
+                  @if (formTutor.controls.email.touched && formTutor.controls.email.invalid && situacaoCpf() !== 'existente') {
+                    <small class="erro">E-mail inválido.</small>
+                  }
+                </div>
+              </div>
+
+              @if (situacaoCpf() !== 'existente') {
+                <label class="row" style="align-items: flex-start; gap: 10px" for="aviso">
+                  <input id="aviso" type="checkbox" formControlName="aviso" style="margin-top: 3px" />
+                  <span>O tutor foi informado sobre como a clínica usa os dados dele para administrar o plano.</span>
+                </label>
+                @if (tentouContinuar() && !formTutor.controls.aviso.value) {
+                  <small class="erro">É preciso registrar essa ciência para cadastrar.</small>
+                }
+              }
+
+              <div class="rodape-passo" style="justify-content: flex-end">
+                <button type="submit" class="btn btn-primary" [disabled]="salvando() || situacaoCpf() === 'verificando'">
+                  {{ salvando() ? 'Salvando…' : situacaoCpf() === 'existente' ? 'Continuar com este tutor' : 'Continuar para os dados do animal' }}<app-icone nome="seta" [tamanho]="16" />
+                </button>
+              </div>
+            </form>
+          }
+
+          @case (2) {
+            <!-- ============ 2. Animais ============ -->
+            @let t = tutor()!;
+            <div class="row between wrap" style="gap: 12px">
+              <div>
+                <h2>Dados do animal</h2>
+                <p class="sub">
+                  Tutor: <b>{{ t.nome }}</b> · <span class="num">CPF {{ t.cpfFormatado }}</span> · {{ formatarTelefone(t.telefone) }}
+                </p>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="trocarTutor()">Trocar tutor</button>
+            </div>
+
+            <p class="muted">Marque os animais deste contrato. O primeiro marcado paga o plano inteiro; os demais têm o desconto dos Parâmetros.</p>
+
+            <div class="stack" style="gap: 10px">
+              @for (a of t.animais; track a.id) {
+                <label class="opcao" [class.desativada]="!elegivel(a)">
+                  <input type="checkbox" [checked]="selecionados().includes(a.id)" [disabled]="!elegivel(a)" (change)="alternarAnimal(a)" />
+                  <span style="flex: 1">
+                    <b>{{ a.nome }}</b>
+                    <span class="muted"> · {{ rotuloEspecie(a.especie) }}{{ a.raca ? ' · ' + a.raca : '' }} · {{ idade(a) }}</span>
+                  </span>
+                  @if (!elegivel(a)) {
+                    <span class="chip bad">{{ motivoDeNaoEntrar(a) }}</span>
+                  } @else if (ordem(a) > 0) {
+                    <span class="chip info">{{ ordem(a) }}º animal</span>
+                  }
+                </label>
+              } @empty {
+                <p class="muted">Este tutor ainda não tem animais cadastrados.</p>
+              }
+            </div>
+
+            @if (cadastrandoAnimal()) {
+              <div class="subform">
+                <app-animal-form rotulo="Cadastrar e selecionar o plano" [titulo]="''"
+                  [especies]="especies()"
+                  [salvando]="salvando()"
+                  (enviar)="cadastrarAnimal($event)"
+                  (cancelar)="cadastrandoAnimal.set(false)"
+                />
+              </div>
+            } @else {
+              <div>
+                <button type="button" class="btn btn-ghost btn-sm" (click)="cadastrandoAnimal.set(true)">
+                  {{ t.animais.length ? 'Cadastrar outro animal' : 'Cadastrar animal' }}
+                </button>
+              </div>
+            }
+
+            <div class="rodape-passo">
+              <button type="button" class="btn btn-ghost" (click)="voltar()"><app-icone nome="setaEsq" [tamanho]="16" />Voltar</button>
+              <button type="button" class="btn btn-primary" [disabled]="!selecionados().length" (click)="continuar()">
+                Selecionar o plano<app-icone nome="seta" [tamanho]="16" />
+              </button>
+            </div>
+          }
+
+          @case (3) {
+            <!-- ============ 3. Plano ============ -->
+            <div>
+              <h2>Seleção do plano para {{ escolhidos().length > 1 ? 'os animais' : escolhidos()[0]?.nome }}</h2>
+              <p class="sub">Compare os valores. A mensalidade é por animal; do segundo em diante há desconto, e quanto mais animais, maior pode ser.</p>
+            </div>
+
+            <div class="planos-grid" role="radiogroup" aria-label="Planos">
+              @for (p of planosDisponiveis(); track p.id) {
+                <button type="button" class="plano" role="radio" [attr.aria-checked]="planoId() === p.id" (click)="escolherPlano(p.id)">
+                  <h3>{{ p.nome }}</h3>
+                  @if (p.especie) {
+                    <span class="chip info">Só {{ rotuloEspecie(p.especie).toLowerCase() }}</span>
+                  }
+                  <div class="preco num">{{ p.mensalidadeCentavos | reais }}<small> /mês por animal</small></div>
+                  @if (p.descricao) {
+                    <p>{{ p.descricao }}</p>
+                  }
+                </button>
+              } @empty {
+                <p class="muted">
+                  {{ planos().length ? 'Nenhum plano ativo vale para todos os animais marcados. Volte e marque só animais da mesma espécie, ou peça à gestão um plano para eles.' : 'Não há plano ativo. A gestão cadastra os planos em Configurações.' }}
+                </p>
+              }
+            </div>
+
+            <div class="rodape-passo">
+              <button type="button" class="btn btn-ghost" (click)="voltar()"><app-icone nome="setaEsq" [tamanho]="16" />Voltar</button>
+              <button type="button" class="btn btn-primary" [disabled]="!plano() || !simulacao()" (click)="continuar()">
+                Revisar contrato<app-icone nome="seta" [tamanho]="16" />
+              </button>
+            </div>
+          }
+
+          @case (4) {
+            <!-- ============ 4. Revisão ============ -->
+            @let t = tutor()!;
+            <div>
+              <h2>Revisão do contrato</h2>
+              <p class="sub">Confira com o tutor antes de enviar. O número do contrato nasce ao enviar para assinatura.</p>
+            </div>
+
+            <div class="rv-g">
+              <div class="rv-b">
+                <div class="row between">
+                  <h3><app-icone nome="usuarios" [tamanho]="16" />Tutor</h3>
+                  <button type="button" class="editar" aria-label="Editar o tutor" (click)="trocarTutor()"><app-icone nome="caneta" [tamanho]="16" /></button>
+                </div>
+                <div class="kvs">
+                  <div class="kv"><span>Nome</span><b>{{ t.nome }}</b></div>
+                  <div class="kv"><span>CPF</span><b class="num">{{ t.cpfFormatado }}</b></div>
+                  <div class="kv"><span>Celular</span><b class="num">{{ formatarTelefone(t.telefone) }}</b></div>
+                </div>
+              </div>
+
+              <div class="rv-b">
+                <div class="row between">
+                  <h3><app-icone nome="pata" [tamanho]="16" />{{ escolhidos().length > 1 ? 'Animais' : 'Animal' }}</h3>
+                  <button type="button" class="editar" aria-label="Editar os animais" (click)="irPara(2)"><app-icone nome="caneta" [tamanho]="16" /></button>
+                </div>
+                <div class="kvs">
+                  @for (a of escolhidos(); track a.id; let i = $index) {
+                    <div class="kv">
+                      <span>{{ i + 1 }}º animal</span>
+                      <b>{{ a.nome }} · {{ rotuloEspecie(a.especie) }}{{ a.raca ? ' · ' + a.raca : '' }}</b>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="rv-b largo">
+                <div class="row between">
+                  <h3><app-icone nome="contrato" [tamanho]="16" />Plano</h3>
+                  <button type="button" class="editar" aria-label="Editar o plano" (click)="irPara(3)"><app-icone nome="caneta" [tamanho]="16" /></button>
+                </div>
+                @if (plano(); as p) {
+                  @if (simulacao(); as s) {
+                    <div class="kvs">
+                      <div class="kv"><span>Plano</span><b>{{ p.nome }}</b></div>
+                      <div class="kv"><span>Mensalidade total</span><b class="num">{{ s.totalCentavos | reais }}</b></div>
+                      <div class="kv"><span>Vigência</span><b>12 meses</b></div>
+                      <div class="kv"><span>Total do contrato</span><b class="num">{{ s.totalCentavos * 12 | reais }}</b></div>
+                    </div>
+                    @if (escolhidos().length === 2 && s.descontoPercentual > 0) {
+                      <p class="muted" style="margin-top: 10px; font-size: 14px">Segundo animal com desconto de {{ s.descontoPercentual }}%.</p>
+                    } @else if (escolhidos().length > 2) {
+                      <p class="muted" style="margin-top: 10px; font-size: 14px">
+                        Segundo animal com desconto de {{ s.descontoPercentual }}%
+                        e do terceiro em diante, de {{ s.descontoTerceiroEmDiantePercentual ?? s.descontoPercentual }}%.
+                      </p>
+                    }
+                  }
+                }
+              </div>
+            </div>
+
+            @if (carencias().length) {
+              <div class="rv-carencias">
+                <h3><app-icone nome="relogio" [tamanho]="16" />Carências <span class="muted" style="font-weight: 600">· a partir do primeiro pagamento</span></h3>
+                @for (k of carencias(); track k.dias) {
+                  <div class="linha-c"><b class="num">{{ k.dias }} dias</b><span>{{ k.nomes }}</span></div>
+                }
+              </div>
+            }
+
+            <div class="rodape-passo">
+              <button type="button" class="btn btn-ghost" (click)="voltar()"><app-icone nome="setaEsq" [tamanho]="16" />Voltar</button>
+              <button type="button" class="btn btn-primary" [disabled]="salvando()" (click)="enviarParaAssinatura()">
+                {{ salvando() ? 'Enviando…' : 'Enviar para assinatura' }}<app-icone nome="seta" [tamanho]="16" />
+              </button>
+            </div>
+          }
+
+          @case (5) {
+            <!-- ============ 5. Assinatura ============ -->
+            @let c = contrato()!;
+            @let a = assinatura();
+            <div>
+              <h2>Assinatura eletrônica</h2>
+              <p class="sub">O tutor recebe o link pelo WhatsApp da clínica, assina o contrato e o termo da LGPD, e o sistema segue sozinho para o pagamento.</p>
+            </div>
+
+            <div class="tl">
+              <div class="it feito">
+                <span class="marco"></span>
+                <div class="texto"><b>Contrato gerado</b><span class="detalhe num">{{ c.numero }}</span></div>
+              </div>
+              <div class="it feito">
+                <span class="marco"></span>
+                <div class="texto">
+                  <b>Enviado para assinatura</b>
+                  <span class="detalhe">
+                    @if (a?.mensagem?.situacao === 'FALHOU') {
+                      O WhatsApp não saiu. Copie o link e mande ao tutor.
+                    } @else {
+                      Para {{ formatarTelefone(c.tutor?.telefone ?? '') }}
+                    }
+                  </span>
+                </div>
+              </div>
+              @if (a?.situacao === 'RECUSADA' || a?.situacao === 'CANCELADA') {
+                <div class="it atual">
+                  <span class="marco"></span>
+                  <div class="texto"><b>Assinatura {{ a!.situacaoRotulo.toLowerCase() }}</b><span class="detalhe">Abra o contrato para decidir o próximo passo.</span></div>
+                </div>
+              } @else {
+                <div class="it atual">
+                  <span class="marco"></span>
+                  <div class="texto"><b>Aguardando assinatura</b><span class="detalhe">Aguardando {{ primeiroNome() }}</span></div>
+                </div>
+              }
+            </div>
+
+            <div class="detalhes-envio">
+              <h3 class="grupo-t" style="font-size: 13px; color: var(--ink-3)">Detalhes do envio</h3>
+              <div class="par"><span>Documentos</span><b>Contrato do plano e termo LGPD</b></div>
+              <div class="par"><span>Plano</span><b>{{ c.planoNome }} · <span class="num">{{ c.mensalidadeTotalCentavos | reais }}</span> por mês</b></div>
+              @if (c.expiraEm) {
+                <div class="par"><span>Validade do link</span><b class="num">{{ c.expiraEm | date: 'dd/MM/yyyy HH:mm' }}</b></div>
+              }
+            </div>
+
+            @if (a?.mensagem; as m) {
+              <div class="mensagem">
+                <span class="rotulo">
+                  <app-icone nome="celular" [tamanho]="14" />Mensagem ao tutor ·
+                  @if (m.situacao === 'SIMULADA') {
+                    WhatsApp ainda não está ligado: a mensagem foi registrada, não enviada
+                  } @else if (m.situacao === 'ENVIADA') {
+                    enviada pelo WhatsApp da clínica
+                  } @else {
+                    o envio falhou
+                  }
+                </span>
+                <div class="balao">{{ m.texto }}</div>
+              </div>
+            }
+
+            @if (a) {
+              <div class="par-link">
+                <a [href]="a.link" target="_blank" rel="noopener" class="link-assinatura num">{{ a.link }}</a>
+                <button type="button" class="btn btn-ghost" (click)="copiarLink()">{{ linkCopiado() ? 'Link copiado' : 'Copiar link' }}</button>
+              </div>
+            }
+
+            <div class="rodape-passo" style="justify-content: flex-start">
+              <button type="button" class="btn btn-primary" [disabled]="salvando()" (click)="verificarAssinatura()">
+                {{ salvando() ? 'Verificando…' : 'Verificar assinatura' }}
+              </button>
+              @if (a?.simulacao) {
+                <button type="button" class="btn btn-ghost" [disabled]="salvando()" (click)="simularAssinatura()">
+                  <app-icone nome="caneta" [tamanho]="16" />Simular assinatura de {{ primeiroNome() }}
+                </button>
+              }
+              <button type="button" class="btn btn-ghost" (click)="verContrato()">Ver contrato (PDF)</button>
+              <a [routerLink]="['/contratos', c.id]" class="btn btn-ghost">Abrir o contrato</a>
+            </div>
+            @if (a?.simulacao) {
+              <p class="muted" style="font-size: 13px">Modo de teste: o provedor de assinatura é simulado. Com o provedor real, só o próprio tutor assina.</p>
+            }
+          }
+
+          @case (6) {
+            <!-- ============ 6. Pagamento ============ -->
+            @let c = contrato()!;
+            <div>
+              <h2>Pagamento no cartão</h2>
+              <p class="sub">Cobrança mensal no cartão de crédito. A primeira cobrança ativa o contrato.</p>
+            </div>
+
+            <div class="tl">
+              <div class="it feito">
+                <span class="marco"></span>
+                <div class="texto">
+                  <b>Assinatura registrada</b>
+                  <span class="detalhe">Contrato <span class="num">{{ c.numero }}</span></span>
+                </div>
+              </div>
+              <div class="it feito">
+                <span class="marco"></span>
+                <div class="texto">
+                  <b>Primeira cobrança gerada</b>
+                  <span class="detalhe">
+                    @if (cobranca(); as cb) {
+                      <span class="num">{{ cb.valorCentavos | reais }}</span> · vence em <span class="num">{{ cb.vencimento | date: 'dd/MM/yyyy' }}</span>
+                    } @else {
+                      Gerada ao aguardar o pagamento
+                    }
+                  </span>
+                </div>
+              </div>
+              <div class="it atual">
+                <span class="marco"></span>
+                <div class="texto">
+                  <b>Aguardando o tutor pagar</b>
+                  <span class="detalhe">A confirmação chega do gateway{{ gateway() ? ' (' + gateway()!.nome + ')' : '' }} e ativa o contrato.</span>
+                </div>
+              </div>
+              <div class="it">
+                <span class="marco"></span>
+                <div class="texto"><b>Contrato ativo</b><span class="detalhe">As carências passam a contar a partir da ativação.</span></div>
+              </div>
+            </div>
+
+            <div class="detalhes-envio">
+              <h3 class="grupo-t" style="font-size: 13px; color: var(--ink-3)">Condições da cobrança</h3>
+              <div class="par"><span>Forma de pagamento</span><b>Cartão de crédito</b></div>
+              <div class="par"><span>Mensalidade</span><b class="num">{{ c.mensalidadeTotalCentavos | reais }}</b></div>
+              <div class="par"><span>Cobranças</span><b>12 mensais</b></div>
+              <div class="par"><span>Primeira cobrança</span><b>Na ativação do contrato</b></div>
+            </div>
+
+            <div class="rodape-passo" style="justify-content: flex-start">
+              @if (ehGestao() && gateway()?.simulacao && cobranca()) {
+                <button type="button" class="btn btn-primary" [disabled]="salvando()" (click)="simularPagamento()">
+                  <app-icone nome="cartao" [tamanho]="16" />{{ salvando() ? 'Processando…' : 'Simular pagamento aprovado' }}
+                </button>
+              }
+              <button type="button" class="btn btn-ghost" (click)="atualizar()">Já pagou? Atualizar</button>
+              <a [routerLink]="['/contratos', c.id]" class="btn btn-ghost">Abrir o contrato</a>
+            </div>
+            @if (gateway()?.simulacao) {
+              <p class="muted" style="font-size: 14px">Gateway de teste: ninguém é cobrado. A aprovação simulada é só da gestão.</p>
+            }
+          }
+        }
+      </section>
+
+      @if (etapa() > 1 && etapa() !== 3) {
+        <aside class="card resumo fcol" aria-label="Resumo da contratação">
+          <div>
+            <h2>Resumo da contratação</h2>
+            <p class="sub">Os dados escolhidos até aqui.</p>
+          </div>
+
+          <div>
+            @if (tutor(); as t) {
+              <h3 class="grupo-t">Tutor</h3>
+              <div class="par"><span>Nome</span><b>{{ t.nome }}</b></div>
+              <div class="par"><span>CPF</span><b class="num">{{ t.cpfFormatado }}</b></div>
+              <div class="par"><span>Celular</span><b class="num">{{ formatarTelefone(t.telefone) }}</b></div>
+            }
+
+            <h3 class="grupo-t">{{ escolhidos().length > 1 ? 'Animais' : 'Animal' }}</h3>
+            @for (a of escolhidos(); track a.id; let i = $index) {
+              <div class="par"><span>{{ i + 1 }}º animal</span><b>{{ a.nome }}</b></div>
+            } @empty {
+              <div class="par"><span>Nenhum animal marcado ainda</span></div>
+            }
+
+            @if (plano(); as p) {
+              @if (etapa() > 3) {
+                <h3 class="grupo-t">Plano</h3>
+                <div class="par"><span>Plano</span><b>{{ p.nome }}</b></div>
+                @if (simulacao(); as s) {
+                  <div class="par"><span>Mensalidade</span><b class="num">{{ s.totalCentavos | reais }}</b></div>
+                }
+              }
+            }
+
+            @if (contrato(); as c) {
+              <h3 class="grupo-t">Contrato</h3>
+              <div class="par"><span>Número</span><b class="num">{{ c.numero }}</b></div>
+              <div class="par"><span>Situação</span><b>{{ c.situacaoRotulo }}</b></div>
+            }
+          </div>
+
+          @if (simulacao(); as s) {
+            @if (etapa() > 3) {
+              <div class="total">
+                <span class="muted">Total do contrato (12 meses)</span>
+                <span class="valor num">{{ s.totalCentavos * 12 | reais }}</span>
+              </div>
+            }
+          }
+        </aside>
+      }
+    </div>
   }
 </div>

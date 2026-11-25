@@ -1,20 +1,10 @@
 @if (auth.usuario(); as u) {
   <div class="app">
-    <header class="topo">
+    <aside class="lateral">
       <a class="marca" routerLink="/" aria-label="Vittalis Pet">
         <img src="logo.webp" alt="Vittalis Pet, plano de saúde" />
       </a>
-      <div class="conta">
-        <span class="quem">
-          <b>{{ u.nome }}</b>
-          <small>{{ nomes[u.perfil] }}</small>
-        </span>
-        <a routerLink="/senha" class="btn btn-ghost btn-sm"><app-icone nome="chave" [tamanho]="16" />Alterar senha</a>
-        <button type="button" class="btn btn-ghost btn-sm" (click)="sair()"><app-icone nome="sair" [tamanho]="16" />Sair</button>
-      </div>
-    </header>
 
-    <aside class="lateral">
       <nav aria-label="Áreas do sistema">
         @for (item of principais(); track item.rota) {
           <a [routerLink]="item.rota" routerLinkActive="ativo"><app-icone [nome]="item.icone" />{{ item.rotulo }}</a>
@@ -26,11 +16,51 @@
           }
         }
       </nav>
-      <div class="rodape">
+
+      <div class="rodape conta-menu">
         <span class="avatar" aria-hidden="true">{{ iniciais(u.nome) }}</span>
         <span class="quem"><b>{{ u.nome }}</b><small>{{ nomes[u.perfil] }}</small></span>
+        <button
+          type="button"
+          class="mais"
+          aria-label="Opções da conta"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="menuAberto()"
+          (click)="alternarMenu($event)"
+        >
+          <app-icone nome="maisOpcoes" [tamanho]="18" />
+        </button>
+        @if (menuAberto()) {
+          <div class="popover" role="menu" [style.left.px]="posicaoMenu()?.left" [style.bottom.px]="posicaoMenu()?.bottom">
+            <a role="menuitem" routerLink="/senha" (click)="menuAberto.set(false)"><app-icone nome="chave" [tamanho]="16" />Alterar senha</a>
+            <button type="button" role="menuitem" (click)="sair()"><app-icone nome="sair" [tamanho]="16" />Sair</button>
+          </div>
+        }
       </div>
     </aside>
+
+    <header class="topo">
+      <span class="escopo"><b>Clínica Reino Animal</b><small>Plano de saúde pet</small></span>
+      <!-- No celular o menu lateral vira faixa e some o rodapé: a conta fica aqui. -->
+      <div class="conta conta-menu">
+        <button
+          type="button"
+          class="mais"
+          aria-label="Opções da conta"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="menuAberto()"
+          (click)="alternarMenu($event)"
+        >
+          <app-icone nome="maisOpcoes" [tamanho]="18" />
+        </button>
+        @if (menuAberto()) {
+          <div class="popover" role="menu">
+            <a role="menuitem" routerLink="/senha" (click)="menuAberto.set(false)"><app-icone nome="chave" [tamanho]="16" />Alterar senha</a>
+            <button type="button" role="menuitem" (click)="sair()"><app-icone nome="sair" [tamanho]="16" />Sair</button>
+          </div>
+        }
+      </div>
+    </header>
 
     <main class="conteudo"><router-outlet /></main>
   </div>

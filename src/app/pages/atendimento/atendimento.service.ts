@@ -113,6 +113,10 @@ export interface Atendimento {
   criadoPor?: string | null;
   criadoEm: string;
   concluidoEm?: string | null;
+  /** O atendimento já foi cadastrado à mão no SimplesVet? A confirmação é de quem fez o cadastro. */
+  lancadoSimplesVet: boolean;
+  lancadoSimplesVetEm?: string | null;
+  lancadoSimplesVetPor?: string | null;
 }
 
 export interface Ficha {
@@ -159,6 +163,11 @@ export class AtendimentoService {
 
   cancelar(id: string, motivo: string): Observable<Atendimento> {
     return this.http.post<Atendimento>(`/api/atendimentos/${id}/cancelar`, { motivo });
+  }
+
+  /** Confirma que o atendimento concluído já foi cadastrado no SimplesVet. Só registra: nada é enviado para lá. */
+  lancarNoSimplesVet(id: string): Observable<Atendimento> {
+    return this.http.post<Atendimento>(`/api/atendimentos/${id}/simples-vet`, {});
   }
 
   quitarCoparticipacao(id: string): Observable<Atendimento> {

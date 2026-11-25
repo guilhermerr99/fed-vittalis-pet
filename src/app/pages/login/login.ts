@@ -4,10 +4,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ErroDaApi } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
+import { Icone } from '../../shared/icone';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, Icone],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
@@ -17,6 +18,7 @@ export class Login {
   private readonly router = inject(Router);
 
   protected readonly enviando = signal(false);
+  protected readonly senhaVisivel = signal(false);
   protected readonly erro = signal<string | null>(null);
 
   protected readonly form = this.fb.nonNullable.group({

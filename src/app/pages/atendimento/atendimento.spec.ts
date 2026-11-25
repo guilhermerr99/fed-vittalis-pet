@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+﻿import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
@@ -43,6 +43,7 @@ const atendimento = (extra: Record<string, unknown> = {}) => ({
   limiteAnual: 2,
   porExcecao: false,
   criadoEm: '2026-11-16T12:00:00Z',
+  lancadoSimplesVet: false,
   ...extra,
 });
 
@@ -84,33 +85,145 @@ describe('Atendimento', () => {
 
   const botao = (el: HTMLElement, texto: string) =>
     Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.trim().startsWith(texto)) as HTMLButtonElement;
+  const linha = (el: HTMLElement, nome: string) =>
+    Array.from(el.querySelectorAll<HTMLButtonElement>('.prow')).find((b) => b.textContent?.includes(nome)) as HTMLButtonElement;
+  const etapaAtual = (el: HTMLElement) => el.querySelector('.passos .atual')?.textContent?.trim();
 
-  it('mostra animal, contrato e a cobertura de cada procedimento, agrupada por categoria', () => {
+  /** Abre a ficha e vai para a tela de autorização. */
+  function abrirAutorizacao(f: ReturnType<typeof ficha>) {
+    const aberto = abrir(f);
+    botao(aberto.el, 'Selecionar procedimento').click();
+    aberto.fixture.detectChanges();
+    return aberto;
+  }
+
+  it('abre com a lista de animais e filtra conforme o texto é digitado', async () => {
+    const ctrl = configurar({});
+    const fixture = TestBed.createComponent(TelaDeAtendimento);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const tutor = (nome: string, animal: string) => ({
+      id: nome,
+      nome,
+      telefone: '11912345678',
+      animais: [{ id: animal, nome: animal, especie: 'cao', ativo: true }],
+    });
+    const pagina = (itens: unknown[]) => ({ itens, pagina: 0, tamanho: 15, total: itens.length });
+
+    await new Promise((r) => setTimeout(r, 20));
+    const inicial = ctrl.expectOne((r) => r.url === '/api/tutores');
+    expect(inicial.request.params.has('busca')).toBe(false);
+    inicial.flush(pagina([tutor('Maria', 'Thor'), tutor('João', 'Mel')]));
+    fixture.detectChanges();
+    expect(etapaAtual(el)).toContain('1. Chegada');
+    expect(el.querySelectorAll('.lista-linhas .linha').length).toBe(2);
+
+    const campo = el.querySelector('#busca') as HTMLInputElement;
+    campo.value = 'tho';
+    campo.dispatchEvent(new Event('input'));
+    await new Promise((r) => setTimeout(r, 320));
+    const filtrada = ctrl.expectOne((r) => r.url === '/api/tutores');
+    expect(filtrada.request.params.get('busca')).toBe('tho');
+    filtrada.flush(pagina([tutor('Maria', 'Thor')]));
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.lista-linhas .linha').length).toBe(1);
+    expect(el.querySelector('.lista-linhas')?.textContent).toContain('Thor');
+  });
+
+  it('Conferir mostra dados do animal, contrato e carências do plano', () => {
     const { el } = abrir(ficha());
     const t = el.textContent ?? '';
+    expect(etapaAtual(el)).toContain('2. Conferir');
     expect(t).toContain('Thor');
     expect(t).toContain('Maria da Silva');
     expect(t).toContain('VP-2026-0001');
-    expect(t).toContain('Liberado com coparticipação');
-    expect(t).toContain('Libera em 30/01/2027');
-    expect(t).toContain('Valor particular');
-    expect(t).toContain('150,00');
-    expect(Array.from(el.querySelectorAll('thead th .cap')).map((c) => c.textContent?.trim())).toEqual(['consulta', 'cirurgia', 'exame']);
-    // Só o liberado tem Autorizar; o em carência tem Pedir exceção; o não coberto não tem ação.
-    expect(Array.from(el.querySelectorAll('button')).filter((b) => b.textContent?.trim() === 'Autorizar').length).toBe(1);
-    expect(Array.from(el.querySelectorAll('button')).filter((b) => b.textContent?.trim() === 'Pedir exceção').length).toBe(1);
+    expect(t).toContain('Plano Essencial');
+    expect(t).toContain('Carências do plano');
+    expect(t).toContain('90 dias');
+    expect(t).toContain('Castração');
   });
 
-  it('autorizar envia animal e procedimento e recarrega a ficha', () => {
-    const { ctrl, fixture, el } = abrir(ficha());
-    botao(el, 'Autorizar').click();
+  it('Autorização lista os procedimentos e só libera o botão quando tudo marcado está liberado', () => {
+    const { fixture, el } = abrirAutorizacao(ficha());
+    expect(etapaAtual(el)).toContain('3. Autorização');
+    expect(el.querySelectorAll('.prow').length).toBe(3);
+    expect(botao(el, 'Autorizar e iniciar').disabled).toBe(true);
+    expect(el.textContent).toContain('Nenhum procedimento selecionado');
+
+    linha(el, 'Consulta clínica').click();
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Autorizado com coparticipação');
+    expect(el.textContent).toContain('25,00');
+    expect(botao(el, 'Autorizar e iniciar').disabled).toBe(false);
+
+    linha(el, 'Castração').click();
+    fixture.detectChanges();
+    expect(el.textContent).toContain('1 de 2 não autorizados');
+    expect(botao(el, 'Autorizar e iniciar').disabled).toBe(true);
+  });
+
+  it('o filtro de texto reduz a lista de procedimentos, sem diferenciar acento nem maiúscula', () => {
+    const { fixture, el } = abrirAutorizacao(ficha());
+    const campo = el.querySelector('#filtro-proc') as HTMLInputElement;
+    campo.value = 'CASTRACAO';
+    campo.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(Array.from(el.querySelectorAll('.prow')).map((l) => l.textContent)).toEqual([expect.stringContaining('Castração')]);
+
+    campo.value = 'exame';
+    campo.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.prow').length).toBe(1);
+    expect(el.textContent).toContain('Ressonância');
+
+    campo.value = 'zzz';
+    campo.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.prow').length).toBe(0);
+    expect(el.textContent).toContain('Nenhum procedimento com esse nome');
+  });
+
+  it('autorizar e iniciar envia animal e procedimento e vai para a tela de atendimento', () => {
+    const { ctrl, fixture, el } = abrirAutorizacao(ficha());
+    linha(el, 'Consulta clínica').click();
+    fixture.detectChanges();
+    botao(el, 'Autorizar e iniciar').click();
     const req = ctrl.expectOne('/api/atendimentos');
     expect(req.request.body).toEqual({ animalId: 'a1', procedimentoId: 'p1' });
     req.flush(atendimento());
     ctrl.expectOne('/api/atendimentos/animal/a1').flush(ficha({ abertos: [atendimento()] }));
     fixture.detectChanges();
-    expect(el.textContent).toContain('Consulta clínica autorizado');
-    expect(el.textContent).toContain('Em andamento');
+    expect(etapaAtual(el)).toContain('4. Atendimento');
+    expect(el.textContent).toContain('Atendimento em andamento');
+    expect(el.textContent).toContain('Procedimento autorizado');
+    expect(el.textContent).toContain('Consulta clínica');
+  });
+
+  it('com procedimento já autorizado em aberto, a ficha abre direto no atendimento', () => {
+    const { el } = abrir(ficha({ abertos: [atendimento()] }));
+    expect(etapaAtual(el)).toContain('4. Atendimento');
+    expect(el.textContent).toContain('Em atendimento');
+  });
+
+  it('ao retomar um atendimento em aberto, avisa e oferece voltar à lista', () => {
+    const { fixture, el } = abrir(ficha({ abertos: [atendimento()] }));
+    expect(el.textContent).toContain('já tem um atendimento em andamento');
+    botao(el, 'Voltar à lista').click();
+    fixture.detectChanges();
+    expect(etapaAtual(el)).toContain('1. Chegada');
+    expect(el.textContent).not.toContain('já tem um atendimento em andamento');
+  });
+
+  it('o aviso de retomada não aparece logo depois de autorizar', () => {
+    const { ctrl, fixture, el } = abrirAutorizacao(ficha());
+    linha(el, 'Consulta clínica').click();
+    fixture.detectChanges();
+    botao(el, 'Autorizar e iniciar').click();
+    ctrl.expectOne('/api/atendimentos').flush(atendimento());
+    ctrl.expectOne('/api/atendimentos/animal/a1').flush(ficha({ abertos: [atendimento()] }));
+    fixture.detectChanges();
+    expect(etapaAtual(el)).toContain('4. Atendimento');
+    expect(el.textContent).not.toContain('já tem um atendimento em andamento');
   });
 
   it('concluir com coparticipação pede para informar se foi paga', () => {
@@ -132,8 +245,35 @@ describe('Atendimento', () => {
     expect(req.request.body).toEqual({ coparticipacaoPaga: false });
   });
 
+  it('a confirmação abre em uma janela e fecha com Esc, com o X ou clicando fora', () => {
+    const { fixture, el } = abrir(ficha({ abertos: [atendimento()] }));
+    const abrirJanela = () => {
+      botao(el, 'Cancelar').click();
+      fixture.detectChanges();
+      expect(el.querySelector('.modal-fundo .modal')).not.toBeNull();
+      expect(el.querySelector('.modal')?.getAttribute('aria-modal')).toBe('true');
+    };
+
+    abrirJanela();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(el.querySelector('.modal')).toBeNull();
+
+    abrirJanela();
+    (el.querySelector('.modal-fechar') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el.querySelector('.modal')).toBeNull();
+
+    abrirJanela();
+    (el.querySelector('.modal-fundo') as HTMLElement).click();
+    fixture.detectChanges();
+    expect(el.querySelector('.modal')).toBeNull();
+  });
+
   it('pedir exceção exige justificativa e envia o dia', () => {
-    const { ctrl, fixture, el } = abrir(ficha());
+    const { ctrl, fixture, el } = abrirAutorizacao(ficha());
+    linha(el, 'Castração').click();
+    fixture.detectChanges();
     botao(el, 'Pedir exceção').click();
     fixture.detectChanges();
     expect(el.textContent).toContain('Pedir exceção de carência: Castração');
@@ -154,26 +294,75 @@ describe('Atendimento', () => {
     expect(req.request.body.data).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it('animal sem contrato não mostra cobertura e oferece a contratação', () => {
+  it('animal sem contrato oferece a contratação e não deixa selecionar procedimento', () => {
     const { el } = abrir(ficha({ contrato: null, procedimentos: [] }));
     expect(el.textContent).toContain('não tem contrato em andamento');
     expect(el.textContent).toContain('Contratar plano');
-    expect(el.textContent).not.toContain('O que o plano libera hoje');
+    expect(botao(el, 'Selecionar procedimento').disabled).toBe(true);
   });
 
   it('contrato suspenso avisa que não autoriza', () => {
-    const { el } = abrir(ficha({ contrato: { id: 'c1', numero: 'VP-2026-0001', situacao: 'SUSPENSO', situacaoRotulo: 'Suspenso', planoNome: 'Essencial', autoriza: false } }));
+    const { fixture, el } = abrir(ficha({ contrato: { id: 'c1', numero: 'VP-2026-0001', situacao: 'SUSPENSO', situacaoRotulo: 'Suspenso', planoNome: 'Essencial', autoriza: false } }));
     expect(el.textContent).toContain('não autoriza procedimentos');
+    botao(el, 'Selecionar procedimento').click();
+    fixture.detectChanges();
+    linha(el, 'Consulta clínica').click();
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Não autorizado: contrato suspenso');
+    expect(botao(el, 'Autorizar e iniciar').disabled).toBe(true);
   });
 
   it('coparticipação pendente tem botão para registrar o pagamento', () => {
     const { ctrl, fixture, el } = abrir(ficha({ recentes: [atendimento({ situacao: 'CONCLUIDO', situacaoRotulo: 'Concluído', coparticipacaoPaga: false, coparticipacaoPendente: true })] }));
-    expect(el.textContent).toContain('Pendente');
+    expect(el.textContent).toContain('Coparticipação pendente');
     botao(el, 'Registrar pagamento').click();
     ctrl.expectOne('/api/atendimentos/at1/coparticipacao/quitar').flush(atendimento());
     ctrl.expectOne('/api/atendimentos/animal/a1').flush(ficha());
     fixture.detectChanges();
     expect(el.textContent).toContain('registrada como paga');
+  });
+
+  it('depois de concluir, avisa para cadastrar no SimplesVet e o botão "Cadastrei" confirma', () => {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const aberto = atendimento({ data: hoje, coparticipacaoCentavos: 0 });
+    const concluido = { ...aberto, situacao: 'CONCLUIDO', situacaoRotulo: 'Concluído' };
+    const { ctrl, fixture, el } = abrir(ficha({ abertos: [aberto] }));
+    expect(el.textContent).not.toContain('Cadastre este atendimento no SimplesVet');
+
+    botao(el, 'Concluir').click();
+    fixture.detectChanges();
+    botao(el, 'Concluir atendimento').click();
+    ctrl.expectOne('/api/atendimentos/at1/concluir').flush(concluido);
+    ctrl.expectOne('/api/atendimentos/animal/a1').flush(ficha({ recentes: [concluido] }));
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Cadastre este atendimento no SimplesVet');
+
+    botao(el, 'Cadastrei').click();
+    ctrl.expectOne('/api/atendimentos/at1/simples-vet').flush(atendimento({ ...concluido, lancadoSimplesVet: true }));
+    ctrl.expectOne('/api/atendimentos/animal/a1').flush(
+      ficha({
+        recentes: [{ ...concluido, lancadoSimplesVet: true, lancadoSimplesVetPor: 'vet@clinica.com', lancadoSimplesVetEm: '2026-11-17T12:00:00Z' }],
+      }),
+    );
+    fixture.detectChanges();
+    expect(el.textContent).toContain('marcado como cadastrado no SimplesVet');
+    expect(el.textContent).toContain('Cadastrado no SimplesVet');
+    expect(el.textContent).toContain('vet@clinica.com');
+    expect(botao(el, 'Cadastrei')).toBeUndefined();
+  });
+
+  it('atendimento de dia anterior sem cadastro no SimplesVet continua avisando', () => {
+    const { ctrl, fixture, el } = abrir(
+      ficha({ recentes: [atendimento({ situacao: 'CONCLUIDO', situacaoRotulo: 'Concluído', data: '2026-11-10', coparticipacaoCentavos: 0 })] }),
+    );
+    expect(el.textContent).toContain('Falta cadastrar no SimplesVet');
+    botao(el, 'Cadastrei').click();
+    ctrl.expectOne('/api/atendimentos/at1/simples-vet').flush(atendimento({ lancadoSimplesVet: true }));
+    ctrl.expectOne('/api/atendimentos/animal/a1').flush(
+      ficha({ recentes: [atendimento({ situacao: 'CONCLUIDO', data: '2026-11-10', coparticipacaoCentavos: 0, lancadoSimplesVet: true })] }),
+    );
+    fixture.detectChanges();
+    expect(el.textContent).not.toContain('Falta cadastrar no SimplesVet');
   });
 });
 

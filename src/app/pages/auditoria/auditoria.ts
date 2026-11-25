@@ -2,7 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { SITUACOES } from '../contratos/contratos.service';
+import { Icone } from '../../shared/icone';
+import { PERFIS, interpretar, rotuloDoObjeto } from './auditoria-detalhes';
 import { mensagemDeErro } from '../login/login';
 
 interface Registro {
@@ -13,6 +14,7 @@ interface Registro {
   autorPerfil?: string;
   ip?: string;
   objetoTipo?: string;
+  objetoId?: string;
   detalhes?: Record<string, unknown>;
 }
 
@@ -55,73 +57,31 @@ const ACOES: Record<string, string> = {
   ATENDIMENTO_AUTORIZADO: 'Atendimento autorizado',
   ATENDIMENTO_NEGADO: 'Atendimento negado',
   ATENDIMENTO_CONCLUIDO: 'Atendimento concluído',
+  ATENDIMENTO_LANCADO_SIMPLES_VET: 'Atendimento cadastrado no SimplesVet',
   ATENDIMENTO_CANCELADO: 'Atendimento cancelado',
+  ASSINATURA_ENVIADA: 'Contrato enviado para assinatura',
+  ASSINATURA_CONFIRMADA: 'Assinatura confirmada',
+  ASSINATURA_RECUSADA: 'Assinatura recusada',
+  ASSINATURA_CANCELADA: 'Assinatura cancelada',
+  MODELO_CONTRATO_PUBLICADO: 'Modelo do contrato publicado',
   COPARTICIPACAO_QUITADA: 'Coparticipação quitada',
   EXCECAO_SOLICITADA: 'Exceção de carência solicitada',
   EXCECAO_APROVADA: 'Exceção de carência aprovada',
   EXCECAO_RECUSADA: 'Exceção de carência recusada',
   EXCECAO_EXPIRADA: 'Exceção de carência expirada',
   ROTINAS_EXECUTADAS: 'Rotinas automáticas executadas',
+  COBRANCA_GERADA: 'Cobrança gerada',
+  COBRANCA_PAGA: 'Cobrança paga',
+  COBRANCA_RECUSADA: 'Cobrança recusada',
+  COBRANCA_NOVA_TENTATIVA: 'Nova tentativa de cobrança',
+  COBRANCA_CANCELADA: 'Cobrança cancelada',
 };
-
-const CAMPOS: Record<string, string> = {
-  antes: 'antes',
-  depois: 'depois',
-  plano: 'plano',
-  procedimento: 'procedimento',
-  origem: 'origem',
-  vigenciaInicio: 'a partir de',
-  carenciaDias: 'carência (dias)',
-  limiteAnual: 'limite/ano',
-  coparticipacaoCentavos: 'coparticipação',
-  intervaloMinimoDias: 'intervalo mín. (dias)',
-  mensalidadeCentavos: 'mensalidade',
-  precoParticularCentavos: 'preço particular',
-  numero: 'contrato',
-  de: 'de',
-  para: 'para',
-  animais: 'animais',
-  mensalidadeTotalCentavos: 'mensalidade total',
-  contrato: 'contrato',
-  estado: 'estado',
-  motivo: 'motivo',
-  usosNoPeriodo: 'usos no período',
-  coparticipacaoPendente: 'coparticipação pendente',
-  data: 'dia',
-  linksExpirados: 'links expirados',
-  suspensos: 'suspensos',
-  cancelados: 'cancelados',
-  renovados: 'renovados',
-  excecoesExpiradas: 'exceções expiradas',
-  falhas: 'falhas',
-  vigenciaFim: 'vigência até',
-};
-
-function formatar(valor: unknown, chave = ''): string {
-  if (valor == null) {
-    return 'nenhum';
-  }
-  if (typeof valor === 'object') {
-    if (Array.isArray(valor)) {
-      return valor.map((v) => formatar(v)).join(', ');
-    }
-    return Object.entries(valor as Record<string, unknown>)
-      .map(([k, v]) => `${CAMPOS[k] ?? k}: ${formatar(v, k)}`)
-      .join(' · ');
-  }
-  if ((chave === 'de' || chave === 'para') && typeof valor === 'string') {
-    return SITUACOES.find((s) => s.valor === valor)?.rotulo ?? valor;
-  }
-  if (typeof valor === 'number' && chave.endsWith('Centavos')) {
-    return (valor / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
-  return String(valor);
-}
 
 @Component({
   selector: 'app-auditoria',
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [ReactiveFormsModule, DatePipe, Icone],
   templateUrl: './auditoria.html',
+  host: { '(document:keydown.escape)': 'fechar()' },
 })
 export class Auditoria implements OnInit {
   private readonly http = inject(HttpClient);
@@ -135,6 +95,12 @@ export class Auditoria implements OnInit {
   protected readonly totalDePaginas = computed(() => {
     const d = this.dados();
     return d ? Math.max(1, Math.ceil(d.total / d.tamanho)) : 1;
+  });
+
+  protected readonly aberto = signal<Registro | null>(null);
+  protected readonly detalhe = computed(() => {
+    const r = this.aberto();
+    return interpretar(r?.acao ?? '', r?.detalhes);
   });
 
   protected readonly filtro = this.fb.nonNullable.group({ acao: [''] });
@@ -161,8 +127,28 @@ export class Auditoria implements OnInit {
     return !ip ? '—' : ip === '0:0:0:0:0:0:0:1' || ip === '::1' || ip === '127.0.0.1' ? 'este computador' : ip;
   }
 
-  protected resumo(r: Registro): string {
-    return r.detalhes ? formatar(r.detalhes) : '';
+  protected perfil(perfil?: string): string {
+    return perfil ? (PERFIS[perfil] ?? perfil) : '';
+  }
+
+  protected objeto(tipo?: string): string {
+    return rotuloDoObjeto(tipo);
+  }
+
+  protected abrir(registro: Registro): void {
+    this.aberto.set(registro);
+    // A janela abre sobre a tela: o foco vai para o botão de fechar, para o Esc e o teclado já valerem.
+    setTimeout(() => document.querySelector<HTMLElement>('.modal .modal-fechar')?.focus());
+  }
+
+  protected fechar(): void {
+    this.aberto.set(null);
+  }
+
+  protected fundoClicado(evento: Event): void {
+    if (evento.target === evento.currentTarget) {
+      this.fechar();
+    }
   }
 
   private carregar(): void {

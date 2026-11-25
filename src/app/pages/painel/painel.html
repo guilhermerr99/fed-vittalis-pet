@@ -1,0 +1,186 @@
+<header class="ph">
+  <div>
+    <h1>Painel da clínica</h1>
+    <p>Como o plano está indo: dinheiro, contratos, uso e o que precisa de você hoje.</p>
+  </div>
+  <div class="row">
+    @if (painel(); as p) {
+      <span class="muted">Atualizado às {{ p.geradoEm | date: 'HH:mm' }}</span>
+    }
+    <button type="button" class="btn btn-ghost btn-sm" [disabled]="carregando()" (click)="carregar()">
+      {{ carregando() ? 'Atualizando…' : 'Atualizar' }}
+    </button>
+  </div>
+</header>
+
+@if (erro(); as mensagem) {
+  <p class="alert" role="alert">{{ mensagem }}</p>
+}
+
+@if (painel(); as p) {
+  <div class="painel">
+    <section class="kpis" aria-label="Indicadores">
+      <article class="kpi destaque">
+        <span class="rotulo">Mensalidade recorrente</span>
+        <b class="valor num"><app-numero [valor]="p.indicadores.mensalidadeRecorrenteCentavos" formato="reais" /></b>
+        <span class="sub">por mês, de {{ p.indicadores.animaisCobertos }} animal(is) cobertos</span>
+      </article>
+      <article class="kpi">
+        <span class="rotulo">Recebido neste mês</span>
+        <b class="valor num"><app-numero [valor]="p.indicadores.receitaDoMesCentavos" formato="reais" /></b>
+        <span class="sub">{{ p.indicadores.aReceberNoMesCentavos | reais }} ainda a receber</span>
+      </article>
+      <article class="kpi">
+        <span class="rotulo">Contratos ativos</span>
+        <b class="valor num"><app-numero [valor]="p.indicadores.contratosAtivos" /></b>
+        <span class="sub">{{ totalDeContratos() }} no total, em qualquer situação</span>
+      </article>
+      <article class="kpi" [class.alerta]="p.indicadores.contratosEmAtraso > 0">
+        <span class="rotulo">Em atraso ou suspensos</span>
+        <b class="valor num"><app-numero [valor]="p.indicadores.contratosEmAtraso" /></b>
+        <span class="sub">{{ p.indicadores.valorEmAtrasoCentavos | reais }} por mês em risco</span>
+      </article>
+    </section>
+
+    <div class="duas">
+      <section class="card stack" aria-label="Receita por mês">
+        <div>
+          <h2>Receita por mês</h2>
+          <p class="sub">Mensalidades pagas nos últimos seis meses.</p>
+        </div>
+        <app-barras [barras]="p.receitaPorMes" formato="reais" />
+      </section>
+      <section class="card stack" aria-label="Contratos ativados por mês">
+        <div>
+          <h2>Contratos ativados</h2>
+          <p class="sub">Novos contratos que começaram a valer em cada mês.</p>
+        </div>
+        <app-barras [barras]="p.contratosAtivadosPorMes" />
+      </section>
+    </div>
+
+    @if (p.vendas; as v) {
+    <section class="card stack" aria-label="Vendas de planos">
+      <div class="row between wrap">
+        <div>
+          <h2>Vendas de planos</h2>
+          <p class="sub">Contratos que começaram a valer, pelo valor da mensalidade contratada (não pelo que já foi recebido).</p>
+        </div>
+        <div class="abas" role="group" aria-label="Período das vendas">
+          <button type="button" [attr.aria-pressed]="periodoDasVendas() === 'dia'" (click)="periodoDasVendas.set('dia')">Por dia</button>
+          <button type="button" [attr.aria-pressed]="periodoDasVendas() === 'mes'" (click)="periodoDasVendas.set('mes')">Por mês</button>
+        </div>
+      </div>
+      <div class="vendas-resumo">
+        <div>
+          <span class="rotulo">Vendido hoje</span>
+          <b class="num">{{ v.valorHojeCentavos | reais }}</b>
+          <span class="sub">{{ v.contratosHoje }} contrato(s)</span>
+        </div>
+        <div>
+          <span class="rotulo">Vendido neste mês</span>
+          <b class="num">{{ v.valorNoMesCentavos | reais }}</b>
+          <span class="sub">{{ v.contratosNoMes }} contrato(s)</span>
+        </div>
+      </div>
+      <app-barras [barras]="barrasDeVendas()" formato="reais" [valores]="periodoDasVendas() === 'mes'" [rotuloACada]="periodoDasVendas() === 'dia' ? 5 : 1" />
+      <div>
+        <h3>Quem cadastrou, neste mês</h3>
+        @if (v.porPessoaNoMes.length) {
+          <ul class="por-pessoa">
+            @for (pessoa of v.porPessoaNoMes; track pessoa.nome; let i = $index) {
+              <li>
+                <span class="nome-proc">{{ pessoa.nome }}</span>
+                <span class="trilho"><span class="preench" [style.width.%]="porcentagem(pessoa.valorCentavos, maiorVendedor())" [style.--atraso]="i * 70 + 'ms'"></span></span>
+                <span class="num valor-pessoa">{{ pessoa.valorCentavos | reais }} <span class="muted">· {{ pessoa.contratos }}</span></span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="vazio-painel">Nenhum contrato começou a valer neste mês.</p>
+        }
+      </div>
+    </section>
+    }
+
+    <div class="duas">
+      <section class="card stack" aria-label="Contratos por situação">
+        <div>
+          <h2>Contratos por situação</h2>
+          <p class="sub">{{ totalDeContratos() }} contratos no total.</p>
+        </div>
+        <ul class="faixas">
+          @for (s of comContratos(); track s.chave; let i = $index) {
+            <li>
+              <span class="nome"><span [class]="'chip ' + classeSituacao(s.chave)">{{ s.rotulo }}</span></span>
+              <span class="trilho"><span class="preench" [style.width.%]="porcentagem(s.valor, totalDeContratos())" [style.--atraso]="i * 50 + 'ms'"></span></span>
+              <span class="num contagem">{{ s.valor }}</span>
+            </li>
+          } @empty {
+            <li class="sem-dados">Nenhum contrato ainda.</li>
+          }
+        </ul>
+        @if (semContratos() && comContratos().length) {
+          <p class="rodape-card sem-contratos">Sem contratos em: {{ semContratos() }}.</p>
+        }
+      </section>
+
+      <section class="card stack" aria-label="Procedimentos mais usados">
+        <div>
+          <h2>Mais usados</h2>
+          <p class="sub">Procedimentos concluídos nos últimos 30 dias.</p>
+        </div>
+        @if (p.procedimentosMaisUsados.length) {
+          <ol class="ranking">
+            @for (f of p.procedimentosMaisUsados; track f.chave; let i = $index) {
+              <li>
+                <span class="posicao num">{{ i + 1 }}</span>
+                <span class="meio">
+                  <span class="nome-proc">{{ f.rotulo }}</span>
+                  <span class="trilho"><span class="preench" [style.width.%]="porcentagem(f.valor, maisUsado())" [style.--atraso]="i * 70 + 'ms'"></span></span>
+                </span>
+                <span class="num contagem">{{ f.valor }}</span>
+              </li>
+            }
+          </ol>
+        } @else {
+          <p class="vazio-painel">Ainda não há atendimentos concluídos neste período.</p>
+        }
+        <div class="rodape-card">
+          <span class="muted">{{ p.indicadores.atendimentosNoMes }} atendimento(s) concluído(s) neste mês</span>
+          @if (p.indicadores.coparticipacaoPendenteCentavos > 0) {
+            <span class="chip warn">{{ p.indicadores.coparticipacaoPendenteCentavos | reais }} em coparticipação pendente</span>
+          }
+        </div>
+      </section>
+    </div>
+
+    <section class="card stack" aria-label="Pontos de atenção">
+      <div>
+        <h2>Precisa de atenção</h2>
+        <p class="sub">O que está esperando uma ação da gestão ou da equipe.</p>
+      </div>
+      @if (p.atencao.length) {
+        <ul class="atencoes">
+          @for (a of p.atencao; track a.codigo) {
+            <li>
+              <span class="quantidade num">{{ a.quantidade }}</span>
+              <span class="texto">{{ a.rotulo }}</span>
+              <a [routerLink]="a.rota" class="btn btn-ghost btn-sm">Ver</a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="tudo-certo">Tudo em dia. Nada espera por você agora.</p>
+      }
+    </section>
+  </div>
+} @else if (carregando()) {
+  <div class="painel" aria-busy="true">
+    <div class="kpis">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi esqueleto"></div>
+      }
+    </div>
+  </div>
+}

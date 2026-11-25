@@ -38,11 +38,13 @@
             <td>
               {{ r.autorEmail ?? '—' }}
               @if (r.autorPerfil) {
-                <span class="chip">{{ r.autorPerfil }}</span>
+                <span class="chip">{{ perfil(r.autorPerfil) }}</span>
               }
             </td>
             <td class="num">{{ origem(r.ip) }}</td>
-            <td class="muted">{{ resumo(r) }}</td>
+            <td>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="abrir(r)">Ver detalhes</button>
+            </td>
           </tr>
         } @empty {
           <tr>
@@ -59,3 +61,81 @@
     <button type="button" class="btn btn-ghost btn-sm" (click)="irPara(1)" [disabled]="pagina() + 1 >= totalDePaginas()">Próxima</button>
   </div>
 </div>
+
+@if (aberto(); as r) {
+  <div class="modal-fundo" (click)="fundoClicado($event)">
+    <section class="modal modal-largo card stack" role="dialog" aria-modal="true" [attr.aria-label]="rotulo(r.acao)">
+      <button type="button" class="modal-fechar" aria-label="Fechar" (click)="fechar()"><app-icone nome="x" [tamanho]="18" /></button>
+
+      <header class="aud-topo">
+        @if (objeto(r.objetoTipo)) {
+          <span class="chip">{{ objeto(r.objetoTipo) }}</span>
+        }
+        <h2>{{ rotulo(r.acao) }}</h2>
+        <p class="muted">{{ r.quando | date: "dd/MM/yyyy 'às' HH:mm:ss" }}</p>
+      </header>
+
+      <section class="aud-bloco">
+        <h3>Quem e de onde</h3>
+        <dl class="dlg">
+          <div class="dlr">
+            <dt>Autor</dt>
+            <dd>{{ r.autorEmail ?? 'Sistema' }}</dd>
+          </div>
+          <div class="dlr">
+            <dt>Perfil</dt>
+            <dd>{{ perfil(r.autorPerfil) || '—' }}</dd>
+          </div>
+          <div class="dlr">
+            <dt>Origem</dt>
+            <dd>{{ origem(r.ip) }}</dd>
+          </div>
+          @if (r.objetoId) {
+            <div class="dlr">
+              <dt>Código do registro</dt>
+              <dd class="mono">{{ r.objetoId }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      @if (detalhe().dados.length) {
+        <section class="aud-bloco">
+          <h3>O que foi feito</h3>
+          <dl class="dlg">
+            @for (l of detalhe().dados; track $index) {
+              <div class="dlr">
+                <dt>{{ l.rotulo }}</dt>
+                <dd>{{ l.valor }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
+      }
+
+      @if (detalhe().mudancas.length) {
+        <section class="aud-bloco">
+          <h3>O que mudou</h3>
+          <div class="aud-mudancas">
+            <div class="aud-mud aud-mud-cab" aria-hidden="true"><span>Campo</span><span>Antes</span><span>Depois</span></div>
+            @for (m of detalhe().mudancas; track $index) {
+              <div class="aud-mud" [class.igual]="m.igual">
+                <span class="campo">{{ m.rotulo }}</span>
+                <span class="antes"><small>Antes</small>{{ m.antes }}</span>
+                <span class="depois"><small>Depois</small>{{ m.depois }}</span>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      @if (!detalhe().dados.length && !detalhe().mudancas.length) {
+        <p class="muted">Este registro não tem detalhes adicionais: a ação em si é a informação.</p>
+      }
+
+      <div class="row" style="justify-content: flex-end">
+        <button type="button" class="btn btn-primary" (click)="fechar()">Fechar</button>
+      </div>
+    </section>
+  </div>
+}

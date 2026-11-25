@@ -1,5 +1,7 @@
 <form class="stack" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
-  <h3>{{ animal() ? 'Alterar animal' : 'Novo animal' }}</h3>
+  @if (titulo() === null) {
+    <h3>{{ animal() ? 'Alterar animal' : 'Novo animal' }}</h3>
+  }
   <div class="grade">
     <div class="field">
       <label for="an">Nome</label>
@@ -49,6 +51,6 @@
   </div>
   <div class="row" style="justify-content: flex-end">
     <button type="button" class="btn btn-ghost" (click)="cancelar.emit()">Cancelar</button>
-    <button type="submit" class="btn btn-primary" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Salvar' }}</button>
+    <button type="submit" class="btn btn-primary" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : rotulo() }}</button>
   </div>
 </form>

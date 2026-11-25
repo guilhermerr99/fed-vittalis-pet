@@ -1,0 +1,26 @@
+.tela {
+  display: block;
+}
+
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: min(100%, 480px);
+  padding: 32px;
+
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+
+  .sub {
+    color: var(--ink-2);
+    margin-top: 6px;
+  }
+
+  .btn-block {
+    margin-top: 4px;
+  }
+}

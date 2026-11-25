@@ -1,33 +1,57 @@
 <main class="tela">
-  <form class="card cartao" [formGroup]="form" (ngSubmit)="entrar()" novalidate>
-    <img class="logo" src="logo.webp" alt="Vittalis Pet, plano de saúde" />
-    <div>
-      <h1>Entrar</h1>
-      <p class="sub">Use o e-mail e a senha da clínica.</p>
+  <section class="vitrine" aria-hidden="false">
+    <span class="orbe um"></span>
+    <span class="orbe dois"></span>
+    <div class="vitrine-conteudo">
+      <div class="texto">
+        <h2>Saúde pet com regras claras.</h2>
+        <p>Contratos, coberturas e atendimentos num só lugar: a clínica trabalha com segurança e o tutor sabe exatamente o que tem direito.</p>
+        <ul>
+          <li><span class="visto"><app-icone nome="visto" [tamanho]="14" /></span>Cobertura e carência conferidas na hora do atendimento</li>
+          <li><span class="visto"><app-icone nome="visto" [tamanho]="14" /></span>Contratos e cobranças acompanhados em tempo real</li>
+          <li><span class="visto"><app-icone nome="visto" [tamanho]="14" /></span>Cada ação registrada, com quem fez e quando</li>
+        </ul>
+      </div>
+      <small class="assinatura">Clínica Reino Animal</small>
     </div>
+  </section>
 
-    <div class="field">
-      <label for="email">E-mail</label>
-      <input id="email" class="inp" type="email" formControlName="email" autocomplete="username" />
-      @if (form.controls.email.touched && form.controls.email.invalid) {
-        <small class="erro">Informe o e-mail.</small>
+  <section class="lado-form">
+    <form class="cartao" [formGroup]="form" (ngSubmit)="entrar()" novalidate>
+      <img class="logo-form" src="logo.webp" alt="Vittalis Pet, plano de saúde" />
+      <div>
+        <h1>Entrar</h1>
+        <p class="sub">Use o e-mail e a senha da clínica.</p>
+      </div>
+
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" class="inp" type="email" formControlName="email" autocomplete="username" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <small class="erro">Informe o e-mail.</small>
+        }
+      </div>
+
+      <div class="field">
+        <label for="senha">Senha</label>
+        <div class="com-botao">
+          <input id="senha" class="inp" [type]="senhaVisivel() ? 'text' : 'password'" formControlName="senha" autocomplete="current-password" />
+          <button type="button" class="olho" [attr.aria-label]="senhaVisivel() ? 'Ocultar a senha' : 'Mostrar a senha'" [attr.aria-pressed]="senhaVisivel()" (click)="senhaVisivel.set(!senhaVisivel())">
+            <app-icone [nome]="senhaVisivel() ? 'olhoFechado' : 'olho'" [tamanho]="18" />
+          </button>
+        </div>
+        @if (form.controls.senha.touched && form.controls.senha.invalid) {
+          <small class="erro">Informe a senha.</small>
+        }
+      </div>
+
+      @if (erro(); as mensagem) {
+        <p class="alert" role="alert">{{ mensagem }}</p>
       }
-    </div>
 
-    <div class="field">
-      <label for="senha">Senha</label>
-      <input id="senha" class="inp" type="password" formControlName="senha" autocomplete="current-password" />
-      @if (form.controls.senha.touched && form.controls.senha.invalid) {
-        <small class="erro">Informe a senha.</small>
-      }
-    </div>
-
-    @if (erro(); as mensagem) {
-      <p class="alert" role="alert">{{ mensagem }}</p>
-    }
-
-    <button type="submit" class="btn btn-primary btn-block" [disabled]="enviando()">
-      {{ enviando() ? 'Entrando…' : 'Entrar' }}
-    </button>
-  </form>
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="enviando()">
+        {{ enviando() ? 'Entrando…' : 'Entrar' }}
+      </button>
+    </form>
+  </section>
 </main>

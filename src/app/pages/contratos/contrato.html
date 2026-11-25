@@ -23,14 +23,18 @@
     @let c = d.contrato;
 
     <section class="card stack" aria-label="Dados do contrato">
-      <h2>Contrato</h2>
+      <div class="row between">
+        <h2>Contrato</h2>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="verContrato()">Ver contrato (PDF)</button>
+      </div>
       <dl class="dados">
         <div>
           <dt>Tutor</dt>
           <dd>
             @if (c.tutor; as t) {
               <a [routerLink]="['/tutores', t.id]">{{ t.nome }}</a>
-              <div class="muted num">{{ t.cpfMascarado }} · {{ telefone(t.telefone) }}</div>
+              <div class="muted num" style="white-space: nowrap">{{ t.cpfMascarado }}</div>
+              <div class="muted num" style="white-space: nowrap">{{ telefone(t.telefone) }}</div>
             } @else {
               —
             }
@@ -42,6 +46,10 @@
         </div>
         <div><dt>Contratado em</dt><dd class="num">{{ c.dataContratacao | date: 'dd/MM/yyyy' }}</dd></div>
         <div><dt>Desconto do segundo animal</dt><dd class="num">{{ c.descontoPercentual }}%</dd></div>
+        @if (c.animais.length > 2) {
+          <div><dt>Desconto do terceiro em diante</dt><dd class="num">{{ descontoDoTerceiro(c) }}%</dd></div>
+        }
+        <div><dt>Cadastrado por</dt><dd>{{ c.criadoPor || '—' }}</dd></div>
         @if (c.expiraEm) {
           <div><dt>Link de assinatura vale até</dt><dd class="num">{{ c.expiraEm | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
         }
@@ -84,7 +92,146 @@
       </div>
     </section>
 
-    @if (d.transicoes.length) {
+    @if (c.situacao === 'RASCUNHO' || assinatura(); as a) {
+      <section class="card stack" aria-label="Assinatura eletrônica">
+        <div class="row between">
+          <h2>Assinatura eletrônica</h2>
+          @if (assinatura(); as a) {
+            <span [class]="'chip ' + (a.situacao === 'ASSINADA' ? 'ok' : a.situacao === 'ENVIADA' ? 'info' : 'warn')">{{ a.situacaoRotulo }}</span>
+          }
+        </div>
+
+        @if (assinatura(); as a) {
+          <dl class="dados">
+            <div><dt>Enviada em</dt><dd class="num">{{ a.enviadaEm | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+            @if (a.assinadaEm) {
+              <div><dt>Assinada em</dt><dd class="num">{{ a.assinadaEm | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+            }
+            <div><dt>Provedor</dt><dd>{{ a.simulacao ? 'Simulado (modo de teste)' : a.provedor }}</dd></div>
+          </dl>
+
+          @if (a.mensagem; as m) {
+            <div class="mensagem">
+              <span class="rotulo">
+                Mensagem ao tutor ·
+                @if (m.situacao === 'SIMULADA') {
+                  registrada, não enviada (WhatsApp ainda não está ligado)
+                } @else if (m.situacao === 'ENVIADA') {
+                  enviada pelo WhatsApp da clínica
+                } @else {
+                  o envio falhou: copie o link e mande ao tutor
+                }
+              </span>
+              <div class="balao">{{ m.texto }}</div>
+            </div>
+          }
+
+          @if (a.situacao === 'ENVIADA') {
+            <div class="par-link">
+              <a [href]="a.link" target="_blank" rel="noopener" class="link-assinatura num">{{ a.link }}</a>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="copiarLink()">{{ linkCopiado() ? 'Link copiado' : 'Copiar link' }}</button>
+            </div>
+            <div class="row">
+              <button type="button" class="btn btn-primary" [disabled]="salvando()" (click)="verificarAssinatura()">Verificar assinatura</button>
+              @if (a.simulacao) {
+                <button type="button" class="btn btn-ghost" [disabled]="salvando()" (click)="simularAssinatura()">Simular assinatura do tutor</button>
+              }
+            </div>
+          }
+        } @else {
+          <p class="muted">
+            O sistema gera o PDF do contrato e do termo da LGPD e manda o link de assinatura ao tutor pelo WhatsApp da clínica. Quando o tutor assinar, o contrato
+            passa sozinho para aguardando pagamento.
+          </p>
+          <div class="row">
+            <button type="button" class="btn btn-primary" [disabled]="salvando()" (click)="enviarParaAssinatura()">
+              {{ salvando() ? 'Enviando…' : 'Enviar para assinatura' }}
+            </button>
+          </div>
+        }
+      </section>
+    }
+
+    @if (cobrancas().length || (gateway() && c.situacao === 'AGUARDANDO_PAGAMENTO')) {
+      <section class="stack" aria-label="Cobranças">
+        <div class="row between">
+          <h2>Cobranças</h2>
+          @if (gateway(); as g) {
+            <span class="chip" [class.warn]="g.simulacao" title="Gateway de pagamento em uso">
+              Gateway: {{ g.nome }}{{ g.simulacao ? ' (de teste, ninguém é cobrado)' : '' }}
+            </span>
+          }
+        </div>
+
+        @if (recusando(); as r) {
+          <div class="card stack">
+            <h3>Simular recusa de {{ mes(r.competencia) }}</h3>
+            <div class="field">
+              <label for="motivo-recusa">Motivo informado pelo gateway</label>
+              <input id="motivo-recusa" class="inp" [formControl]="motivoDaRecusa" maxlength="240" placeholder="Ex.: cartão sem limite" autocomplete="off" />
+            </div>
+            <div class="row" style="justify-content: flex-end">
+              <button type="button" class="btn btn-ghost" (click)="recusando.set(null)">Voltar</button>
+              <button type="button" class="btn btn-danger" [disabled]="salvando()" (click)="simular(r, 'RECUSADA')">Simular recusa</button>
+            </div>
+          </div>
+        }
+
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr>
+                <th>Mês</th>
+                <th>Vencimento</th>
+                <th class="dir">Valor</th>
+                <th>Situação</th>
+                <th>Detalhes</th>
+                <th><span class="sr">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cb of cobrancas(); track cb.id) {
+                <tr>
+                  <td class="num" style="white-space: nowrap">{{ mes(cb.competencia) }}{{ cb.primeira ? ' · primeira' : '' }}</td>
+                  <td class="num">{{ cb.vencimento | date: 'dd/MM/yyyy' }}</td>
+                  <td class="num dir">{{ cb.valorCentavos | reais }}</td>
+                  <td><span [class]="'chip ' + classeCobranca(cb.situacao)">{{ cb.situacaoRotulo }}</span></td>
+                  <td class="muted">
+                    @if (cb.situacao === 'PAGA') {
+                      {{ cb.formaRotulo }} · {{ cb.pagaEm | date: 'dd/MM/yyyy HH:mm' }}
+                    } @else if (cb.situacao === 'RECUSADA') {
+                      {{ cb.motivoDaRecusa }}
+                    } @else {
+                      <span class="num" style="white-space: nowrap">{{ cb.idNoGateway }}</span>
+                    }
+                    @if (cb.tentativas > 1) {
+                      · {{ cb.tentativas }} tentativas
+                    }
+                  </td>
+                  <td class="dir">
+                    @if (cb.situacao === 'RECUSADA') {
+                      <button type="button" class="btn btn-ghost btn-sm" [disabled]="salvando()" (click)="novaTentativa(cb)">Nova tentativa</button>
+                    }
+                    @if (ehGestao() && gateway()?.simulacao && (cb.situacao === 'PENDENTE' || cb.situacao === 'RECUSADA')) {
+                      <button type="button" class="btn btn-primary btn-sm" [disabled]="salvando()" (click)="simular(cb, 'APROVADA')">Simular aprovação</button>
+                      @if (cb.situacao === 'PENDENTE') {
+                        <button type="button" class="btn btn-ghost btn-sm" [disabled]="salvando()" (click)="simular(cb, 'RECUSADA')">Simular recusa</button>
+                      }
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="vazio">Ainda não há cobranças. A primeira nasce quando o contrato passa a aguardar o pagamento.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    @if (visiveis(d).length) {
       <section class="card stack" aria-label="Ações do contrato">
         <h2>Próximos passos</h2>
         @if (acao(); as t) {
@@ -106,7 +253,7 @@
           </div>
         } @else {
           <div class="row">
-            @for (t of d.transicoes; track t.situacao) {
+            @for (t of visiveis(d); track t.situacao) {
               <button
                 type="button"
                 [class]="t.situacao === 'CANCELADO' ? 'btn btn-danger' : 'btn btn-primary'"

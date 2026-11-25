@@ -16,6 +16,9 @@ export class AnimalForm implements OnInit {
   /** Animal em edição; vazio para cadastrar um novo. */
   readonly animal = input<Animal | null>(null);
   readonly salvando = input(false);
+  readonly rotulo = input('Salvar');
+  /** Título do formulário; na contratação o cartão que o envolve já tem o seu. */
+  readonly titulo = input<string | null>(null);
 
   readonly enviar = output<DadosDoAnimal>();
   readonly cancelar = output<void>();

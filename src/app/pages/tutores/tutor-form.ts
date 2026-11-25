@@ -3,10 +3,10 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { cpfValido, emailValido, mascaraCpf, mascaraTelefone, telefoneValido } from '../../shared/documentos';
 import { NovoTutor } from './tutores.service';
 
-const cpf = (c: AbstractControl): ValidationErrors | null => (cpfValido(c.value) ? null : { cpf: true });
-const telefone = (c: AbstractControl): ValidationErrors | null => (telefoneValido(c.value) ? null : { telefone: true });
-const email = (c: AbstractControl): ValidationErrors | null => (emailValido(c.value) ? null : { email: true });
-const nomeCompleto = (c: AbstractControl): ValidationErrors | null =>
+export const cpf = (c: AbstractControl): ValidationErrors | null => (cpfValido(c.value) ? null : { cpf: true });
+export const telefone = (c: AbstractControl): ValidationErrors | null => (telefoneValido(c.value) ? null : { telefone: true });
+export const email = (c: AbstractControl): ValidationErrors | null => (emailValido(c.value) ? null : { email: true });
+export const nomeCompleto = (c: AbstractControl): ValidationErrors | null =>
   String(c.value ?? '').trim().split(/\s+/).length >= 2 ? null : { nome: true };
 
 /** Formulário de cadastro de tutor, usado na tela de novo tutor e dentro da contratação. */

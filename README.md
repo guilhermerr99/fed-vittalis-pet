@@ -41,9 +41,12 @@ src/app/
   pages/               login, alterar senha, usuários e auditoria
   pages/configuracoes/ planos, procedimentos, cobertura (com importação) e parâmetros
   pages/tutores/       tutores e animais (formulários reutilizados na contratação)
-  pages/contratos/     nova contratação em passos, lista e detalhe do contrato
-  pages/atendimento/   atendimento do veterinário: cobertura do animal, autorizar, concluir, pedir exceção
+  pages/contratos/     nova contratação em 6 telas (tutor, animais, plano, revisão, assinatura, pagamento), lista e detalhe
+  pages/atendimento/   atendimento em 4 telas (chegada, conferir, autorização, atendimento): autorizar, concluir, pedir exceção
   pages/excecoes/      relatório das exceções de carência e decisão da gestão
+  pages/painel/        painel da gestão: indicadores, gráficos de seis meses e pontos de atenção
+  shared/              também: números que sobem (app-numero), gráfico de colunas (app-barras) e barra de passos (app-passos)
+  _fluxo.scss          estilos das telas em etapas (colunas, resumo lateral, linha do tempo, carências, revisão)
   shared/              ícones e formatação de dinheiro (centavos)
   areas/               áreas ainda em construção (veterinário, gestão, cliente)
 src/styles.scss        tokens visuais (base neutra, cor só em status e dados)
