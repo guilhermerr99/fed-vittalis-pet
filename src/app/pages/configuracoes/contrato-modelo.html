@@ -1,0 +1,242 @@
+<header class="ph">
+  <div>
+    <h1>Modelo do contrato</h1>
+    <p>Cada publicação cria uma versão nova. Contratos já enviados não mudam.</p>
+  </div>
+  <div class="row">
+    <button type="button" class="btn btn-ghost" [disabled]="carregando()" (click)="previa()">Pré-visualizar</button>
+    <button type="button" class="btn btn-primary" [disabled]="salvando() || carregando() || !alterado()" (click)="publicar()">
+      {{ salvando() ? 'Publicando…' : 'Publicar' }}
+    </button>
+  </div>
+</header>
+
+<div class="stack">
+  @if (erro(); as mensagem) {
+    <p class="alert" role="alert">{{ mensagem }}</p>
+  }
+  @if (aviso(); as mensagem) {
+    <p class="alert ok" role="status">{{ mensagem }}</p>
+  }
+
+  @if (vigente(); as v) {
+    <div class="row" style="gap: 10px; align-items: center; min-height: 36px">
+      <span class="muted">
+        @if (v.publicado) {
+          Versão <b>{{ v.versao }}</b> · {{ v.criadoEm | date: 'dd/MM/yyyy HH:mm' }}{{ v.criadoPor ? ' · ' + v.criadoPor : '' }}
+        } @else {
+          Modelo padrão do sistema, ainda não publicado
+        }
+      </span>
+      @if (alterado()) {
+        <span class="chip warn">Não publicado</span>
+        <button type="button" class="btn btn-ghost btn-sm" [disabled]="salvando()" (click)="descartar()">Descartar</button>
+      }
+    </div>
+  }
+
+  <div class="opcoes-de-publicacao" role="group" aria-label="Opções de publicação">
+    <select class="inp inp-sm" aria-label="Letra do contrato" (change)="familia.set($any($event.target).value)">
+      @for (f of familias; track f.valor) {
+        <option [value]="f.valor" [selected]="f.valor === familia()">{{ f.rotulo }}</option>
+      }
+    </select>
+    <select class="inp inp-sm" aria-label="Tamanho da letra" (change)="tamanhoBase.set(+$any($event.target).value)">
+      @for (t of [8, 9, 10, 11, 12, 14]; track t) {
+        <option [value]="t" [selected]="t === tamanhoBase()">{{ t }} pt</option>
+      }
+    </select>
+    <label class="revisado" title="Desmarcado, o PDF leva o aviso de texto provisório">
+      <input type="checkbox" [checked]="revisado()" (change)="revisado.set($any($event.target).checked)" />
+      Revisado pelo jurídico
+    </label>
+    <input
+      id="nota"
+      class="inp inp-sm nota"
+      [value]="nota()"
+      (input)="nota.set($any($event.target).value)"
+      maxlength="240"
+      placeholder="Nota da versão (opcional)"
+      aria-label="Nota da versão"
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="editor-contrato">
+    <section class="card painel-do-texto" aria-label="Texto do contrato">
+      <div class="barra-do-editor" role="toolbar" aria-label="Formatação">
+        <div class="grupo">
+          <button type="button" class="ferramenta" [disabled]="!podeDesfazer()" (mousedown)="$event.preventDefault()" (click)="comando('desfazer')" aria-label="Desfazer" title="Desfazer">↶</button>
+          <button type="button" class="ferramenta" [disabled]="!podeRefazer()" (mousedown)="$event.preventDefault()" (click)="comando('refazer')" aria-label="Refazer" title="Refazer">↷</button>
+        </div>
+        <div class="grupo">
+          <select class="inp inp-sm" aria-label="Estilo do parágrafo" [value]="estiloDoBloco()" (change)="mudarEstilo($any($event.target).value)">
+            <option value="p">Parágrafo</option>
+            <option value="h1">Título 1</option>
+            <option value="h2">Título 2</option>
+            <option value="h3">Título 3</option>
+          </select>
+          <select class="inp inp-sm" aria-label="Letra do trecho" [value]="letraDoTrecho()" (change)="mudarLetra($any($event.target).value)">
+            <option value="">Letra do contrato</option>
+            <option value="sans-serif">Sem serifa</option>
+            <option value="serif">Com serifa</option>
+            <option value="monospace">Monoespaçada</option>
+          </select>
+          <select class="inp inp-sm" aria-label="Tamanho do trecho" [value]="tamanhoDoTrecho()" (change)="mudarTamanho($any($event.target).value)">
+            <option value="">Tamanho</option>
+            @for (t of tamanhos; track t) {
+              <option [value]="t">{{ t }} pt</option>
+            }
+          </select>
+          <select class="inp inp-sm" aria-label="Cor do texto" [value]="corDoTrecho()" (change)="mudarCor($any($event.target).value)">
+            @for (c of cores; track c.valor) {
+              <option [value]="c.valor">{{ c.rotulo }}</option>
+            }
+          </select>
+        </div>
+        <div class="grupo">
+          <button type="button" class="ferramenta" [class.ativa]="ativo('bold')" [attr.aria-pressed]="ativo('bold')" (mousedown)="$event.preventDefault()" (click)="comando('negrito')" aria-label="Negrito" title="Negrito"><b>N</b></button>
+          <button type="button" class="ferramenta" [class.ativa]="ativo('italic')" [attr.aria-pressed]="ativo('italic')" (mousedown)="$event.preventDefault()" (click)="comando('italico')" aria-label="Itálico" title="Itálico"><i>I</i></button>
+          <button type="button" class="ferramenta" [class.ativa]="ativo('underline')" [attr.aria-pressed]="ativo('underline')" (mousedown)="$event.preventDefault()" (click)="comando('sublinhado')" aria-label="Sublinhado" title="Sublinhado"><u>S</u></button>
+        </div>
+        <div class="grupo">
+          <button type="button" class="ferramenta" [class.ativa]="alinhado('left')" (mousedown)="$event.preventDefault()" (click)="alinhar('left')" aria-label="Alinhar à esquerda" title="Alinhar à esquerda">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 3h12M2 6.5h8M2 10h12M2 13.5h8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" /></svg>
+          </button>
+          <button type="button" class="ferramenta" [class.ativa]="alinhado('center')" (mousedown)="$event.preventDefault()" (click)="alinhar('center')" aria-label="Centralizar" title="Centralizar">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 3h12M4 6.5h8M2 10h12M4 13.5h8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" /></svg>
+          </button>
+          <button type="button" class="ferramenta" [class.ativa]="alinhado('right')" (mousedown)="$event.preventDefault()" (click)="alinhar('right')" aria-label="Alinhar à direita" title="Alinhar à direita">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 3h12M6 6.5h8M2 10h12M6 13.5h8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" /></svg>
+          </button>
+          <button type="button" class="ferramenta" [class.ativa]="alinhado('justify')" (mousedown)="$event.preventDefault()" (click)="alinhar('justify')" aria-label="Justificar" title="Justificar">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 3h12M2 6.5h12M2 10h12M2 13.5h12" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" /></svg>
+          </button>
+        </div>
+        <div class="grupo">
+          <button type="button" class="ferramenta" [class.ativa]="ativo('bulletList')" (mousedown)="$event.preventDefault()" (click)="comando('marcadores')" aria-label="Lista com marcadores" title="Lista com marcadores">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 3.5h8M6 8h8M6 12.5h8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" /><circle cx="2.5" cy="3.5" r="1.1" fill="currentColor" /><circle cx="2.5" cy="8" r="1.1" fill="currentColor" /><circle cx="2.5" cy="12.5" r="1.1" fill="currentColor" /></svg>
+          </button>
+          <button type="button" class="ferramenta" [class.ativa]="ativo('orderedList')" (mousedown)="$event.preventDefault()" (click)="comando('numerada')" aria-label="Lista numerada" title="Lista numerada">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7 3.5h7M7 8h7M7 12.5h7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" /><text x="1" y="5.2" font-size="4.6" fill="currentColor">1</text><text x="1" y="9.7" font-size="4.6" fill="currentColor">2</text><text x="1" y="14.2" font-size="4.6" fill="currentColor">3</text></svg>
+          </button>
+        </div>
+        <div class="grupo" role="group" aria-label="Inserir no texto">
+          <button type="button" class="ferramenta" (mousedown)="$event.preventDefault()" (click)="inserirTabela()" aria-label="Inserir tabela" title="Inserir tabela">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 3h12v10H2zM2 6.5h12M2 10h12M6 3v10M10 3v10" stroke="currentColor" stroke-width="1.3" fill="none" /></svg>
+          </button>
+          <label class="ferramenta" title="Inserir imagem (PNG ou JPG, até 800 KB)" aria-label="Inserir imagem">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none" /><circle cx="5.6" cy="6.4" r="1.1" fill="currentColor" /><path d="m3 12 3.6-3.4 2.6 2.4 1.8-1.6L13 12" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round" /></svg>
+            <input type="file" accept="image/png,image/jpeg" class="sr" (change)="escolherImagem($event)" />
+          </label>
+          <button type="button" class="ferramenta" (mousedown)="$event.preventDefault()" (click)="comando('linha')" aria-label="Linha divisória" title="Linha divisória">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 8h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+          </button>
+          <button type="button" class="ferramenta" (mousedown)="$event.preventDefault()" (click)="comando('quebra')" aria-label="Nova página" title="Nova página: o que vem depois começa numa página nova">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 6V2.5h8V6M4 10v3.5h8V10M1.5 8h2m3 0h3m3 0h2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </button>
+        </div>
+        @if (dentroDaTabela()) {
+          <div class="grupo" aria-label="Tabela">
+            <button type="button" class="ferramenta texto" (mousedown)="$event.preventDefault()" (click)="tabela('linha')">+ Linha</button>
+            <button type="button" class="ferramenta texto" (mousedown)="$event.preventDefault()" (click)="tabela('coluna')">+ Coluna</button>
+            <button type="button" class="ferramenta texto" (mousedown)="$event.preventDefault()" (click)="tabela('excluirLinha')">− Linha</button>
+            <button type="button" class="ferramenta texto" (mousedown)="$event.preventDefault()" (click)="tabela('excluirColuna')">− Coluna</button>
+            <button type="button" class="ferramenta texto perigo" (mousedown)="$event.preventDefault()" (click)="tabela('excluir')">Excluir tabela</button>
+          </div>
+        }
+        @if (imagemSelecionada()) {
+          <div class="grupo" aria-label="Imagem">
+            <button type="button" class="ferramenta texto" (mousedown)="$event.preventDefault()" (click)="tamanhoDaImagem(80)">Pequena</button>
+            <button type="button" class="ferramenta texto" (mousedown)="$event.preventDefault()" (click)="tamanhoDaImagem(160)">Média</button>
+            <button type="button" class="ferramenta texto" (mousedown)="$event.preventDefault()" (click)="tamanhoDaImagem(320)">Grande</button>
+          </div>
+        }
+      </div>
+      <div class="area-da-folha">
+        <div #folha class="folha-do-contrato" [attr.data-letra]="familia()" [style.--tamanho-base.pt]="tamanhoBase()"></div>
+      </div>
+    </section>
+
+    <aside class="lateral-do-contrato" aria-label="Inserir e publicar">
+      <section class="card inserir-no-contrato" aria-label="Inserir no contrato">
+        <h2>Preenchido pelo sistema</h2>
+        <p class="muted" style="margin: 0; font-size: 12.5px">Cada contrato recebe os dados dele no lugar do bloco.</p>
+        <div class="blocos-do-sistema">
+          <button type="button" class="bloco" (mousedown)="$event.preventDefault()" (click)="inserirBloco('animais')">
+            <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M2 3.5h12v9H2zM2 7h12M6.5 3.5v9" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round" /></svg>
+            <span><b>Animais</b><small>Tabela com os animais do contrato</small></span>
+          </button>
+          <button type="button" class="bloco" (mousedown)="$event.preventDefault()" (click)="inserirBloco('carencias')">
+            <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><circle cx="8" cy="8" r="5.6" stroke="currentColor" stroke-width="1.4" fill="none" /><path d="M8 4.8V8l2.2 1.6" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" /></svg>
+            <span><b>Carências</b><small>Prazos de cada procedimento do plano</small></span>
+          </button>
+        </div>
+
+      </section>
+
+      <section class="card lista-de-variaveis" aria-label="Variáveis">
+        <h2>Variáveis</h2>
+        <input
+          class="inp"
+          type="search"
+          [value]="filtro()"
+          (input)="filtro.set($any($event.target).value)"
+          placeholder="Buscar variável"
+          aria-label="Buscar variável"
+          autocomplete="off"
+        />
+        <div class="rolagem" role="list">
+          @for (variavel of variaveisFiltradas(); track variavel.nome) {
+            <button
+              type="button"
+              role="listitem"
+              class="variavel"
+              [title]="variavel.descricao"
+              (mousedown)="$event.preventDefault()"
+              (click)="inserirVariavel(variavel.nome)"
+            >
+              <span class="nome">{{ '{' + variavel.nome + '}' }}</span>
+              <span class="exemplo">{{ variavel.exemplo }}</span>
+            </button>
+          } @empty {
+            <p class="muted" style="padding: 8px 4px">Nenhuma variável.</p>
+          }
+        </div>
+      </section>
+
+    </aside>
+  </div>
+
+  <details class="versoes-do-contrato">
+    <summary>Versões publicadas ({{ versoes().length }})</summary>
+    <div class="tbl">
+      <table>
+        <thead>
+          <tr>
+            <th>Versão</th>
+            <th>Data</th>
+            <th>Por</th>
+            <th>Nota</th>
+            <th><span class="sr">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (v of versoes(); track v.versao) {
+            <tr>
+              <td class="num">{{ v.versao }}</td>
+              <td class="num">{{ v.criadoEm | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ v.criadoPor || '—' }}</td>
+              <td class="muted">{{ v.nota || '—' }}</td>
+              <td class="dir"><button type="button" class="btn btn-ghost btn-sm" (click)="usarVersao(v.versao)">Usar como base</button></td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="vazio">Nenhuma versão publicada ainda.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </details>
+</div>
